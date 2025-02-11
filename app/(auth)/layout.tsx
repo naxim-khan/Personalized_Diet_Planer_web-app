@@ -8,9 +8,9 @@ import Footer from "@/components/Landing/Footer";
 const RootLayout = ({ children }: { children: ReactNode }) => {
     return (
         <main>
-            <Navbar />
+            {/* <Navbar /> */}
             {children}
-            <Footer />
+            {/* <Footer /> */}
         </main>
     )
 }

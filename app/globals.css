@@ -372,7 +372,7 @@
   }
 
   .sidebar-link {
-    @apply flex gap-3 items-center py-1 md:p-3 2xl:p-4 rounded-lg justify-center xl:justify-start transition-colors;
+    @apply flex gap-3  py-1 md:p-3 2xl:p-4 rounded-lg xl:justify-start transition-colors items-start justify-start;
   }
 
   .sidebar-label {
