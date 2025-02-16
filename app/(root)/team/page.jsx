@@ -63,7 +63,7 @@ const Team = () => {
                     </div>
 
                     {/* hero Images */}
-                    <div className='flex justify-center items-center bg-cover' style={{ backgroundImage: `url('/img/frame.png')` }}>
+                    <div className='flex justify-center items-center bg-cover' >
                         <div className="flex justify-center " >
                             <div className="flex items-center justify-center ">
                                 <AnimatedTooltip items={people} />

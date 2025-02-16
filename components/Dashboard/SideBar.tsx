@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { sidebarLinks } from '@/constants/index';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
+import Footer from './Footer';
 
 const SideBar = ({ user }: SiderbarProps) => {
     const pathname = usePathname();
@@ -35,16 +36,16 @@ const SideBar = ({ user }: SiderbarProps) => {
                         MyDiet
                     </h1>
                 </div>
-                
+
                 <div className='flex-1'>
                     {sidebarLinks.map((item) => {
                         const isActive = pathname === item.route || pathname.startsWith(`${item.route}/dashboard`);
                         return (
-                            <Link 
-                                href={item.route} 
-                                key={item.label} 
+                            <Link
+                                href={item.route}
+                                key={item.label}
                                 className={cn('sidebar-link', { 'bg-gradient-green': isActive })}
-                                // onClick={() => setIsExpanded(!isExpanded)}
+                            // onClick={() => setIsExpanded(!isExpanded)}
                             >
                                 <div className='relative size-6'>
                                     <Image
@@ -56,9 +57,9 @@ const SideBar = ({ user }: SiderbarProps) => {
                                         })}
                                     />
                                 </div>
-                                <p className={cn("sidebar-label", { 
+                                <p className={cn("sidebar-label", {
                                     '!text-white': isActive,
-                                    'hidden': !isExpanded 
+                                    'hidden': !isExpanded
                                 })}>
                                     {item.label}
                                 </p>
@@ -67,6 +68,7 @@ const SideBar = ({ user }: SiderbarProps) => {
                     })}
                 </div>
             </nav>
+            <Footer user={user} type='desktop' isExpanded={isExpanded} />
         </section>
     );
 };

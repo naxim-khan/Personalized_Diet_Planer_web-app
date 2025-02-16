@@ -14,11 +14,12 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
+import Footer from './Footer'
 
-const MobileNav = () => {
+const MobileNav = ({ user }: MobileNavProps) => {
     const pathname = usePathname();
     return (
-        <section className='w-full max-w-[264px] '>
+        <section className='w-full max-w-[264px]'>
             <Sheet>
                 <SheetTrigger>
                     <Image
@@ -71,10 +72,9 @@ const MobileNav = () => {
                                         </SheetClose>
                                     );
                                 })}
-                                User
                             </nav>
                         </SheetClose>
-                        Footer
+                        <Footer user={user} type="mobile" />
                     </div>
                 </SheetContent>
             </Sheet>

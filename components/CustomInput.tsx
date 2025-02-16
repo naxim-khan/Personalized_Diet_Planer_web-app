@@ -18,11 +18,11 @@ import { FieldPath } from "react-hook-form";
 import { LuEyeClosed } from "react-icons/lu";
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 
-
+const formSchema = authformSchema('sign-up')
 
 interface CustomInput {
-    control: Control<z.infer<typeof authformSchema>>,
-    name: FieldPath<z.infer<typeof authformSchema>>,
+    control: Control<z.infer<typeof formSchema>>,
+    name: FieldPath<z.infer<typeof formSchema>>,
     label: string,
     placeholder: string,
 }
