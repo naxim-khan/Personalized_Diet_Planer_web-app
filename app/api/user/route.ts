@@ -1,8 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/appwrite";
-import { getLoggedInUser } from "@/lib/actions/users.action";
+import { createAdminClient } from "../../../lib/appwrite";
+import { getLoggedInUser } from "../../../lib/actions/users.action";
 import { Query } from "node-appwrite"; // Import Query for filtering
 
 export async function GET() {

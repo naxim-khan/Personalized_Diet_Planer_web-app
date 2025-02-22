@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getLoggedInUser } from "@/lib/actions/users.action";
+import { getLoggedInUser } from "../../../../lib/actions/users.action";
 import { MongoClient, ObjectId } from "mongodb";
 
 const client = new MongoClient(process.env.MONGODB_URI!);

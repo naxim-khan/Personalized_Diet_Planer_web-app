@@ -1,13 +1,13 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { DietPlan } from "@/lib/actions/dietplan.action";
+import { DietPlan } from "../../lib/actions/dietplan.action";
 import { DietPlanTypes } from "@/types/index"
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "../../components/ui/alert";
+import { Badge } from "../../components/ui/badge";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { UserOptions, fixedOptions } from "@/types/dietPlan";
 

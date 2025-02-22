@@ -1,10 +1,10 @@
 // 'use client'
 export const dynamic = 'force-dynamic';
 // import React, { useState, useEffect } from 'react';
-import DummyDashboard from "@/components/Dashboard/DummyDashboard";
+import DummyDashboard from "../../components/Dashboard/DummyDashboard";
 // import Dashboard from "@/components/Dashboard/Dashboard";
-import { getLoggedInUser } from "@/lib/actions/users.action";
-import Dashboard from "@/components/Dashboard/Dashboard";
+import { getLoggedInUser } from "../../lib/actions/users.action";
+import Dashboard from "../../components/Dashboard/Dashboard";
 
 const Home = async () => {
     // const [isLoading, setIsLoading] = useState(true);

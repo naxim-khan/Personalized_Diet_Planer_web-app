@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
 import { ReactNode } from "react";
-import SideBar from "@/components/Dashboard/SideBar";
+import SideBar from "../../components/Dashboard/SideBar";
 import Image from "next/image";
-import { getLoggedInUser } from "@/lib/actions/users.action";
-import MobileNav from "@/components/Dashboard/MobileNav";
+import { getLoggedInUser } from "../../lib/actions/users.action";
+import MobileNav from "../../components/Dashboard/MobileNav";
 import { redirect } from "next/navigation";
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
