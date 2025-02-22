@@ -1,6 +1,8 @@
 {
     "build": {
-      "ignoreBuildStep": "echo 'Skipping ESLint'"
+      "env": {
+        "NODE_ENV": "production"
+      }
     }
   }
   
