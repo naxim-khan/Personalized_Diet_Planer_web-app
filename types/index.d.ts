@@ -356,3 +356,38 @@ declare interface getBankProps {
 declare interface getBankByAccountIdProps {
   accountId: string;
 }
+
+export interface DietPlanTypes {
+    _id?: string; // MongoDB ObjectId (optional for new plans)
+    userId: string; // ID of the user who owns the plan
+    calories_per_day: number; // Daily calorie target
+    macronutrient_distribution: {
+        protein: string; // e.g., "150g"
+        carbohydrates: string; // e.g., "300g"
+        fats: string; // e.g., "80g"
+    };
+    daily_plan: Array<{
+        day: number; // Day number (1-7)
+        breakfast: Array<{
+            meal: string;
+            ingredients: string[];
+        }>;
+        lunch: Array<{
+            meal: string;
+            ingredients: string[];
+        }>;
+        snacks: Array<{
+            meal: string;
+            ingredients: string[];
+        }>;
+        dinner: Array<{
+            meal: string;
+            ingredients: string[];
+        }>;
+    }>;
+    foods_to_avoid?: string[]; // List of foods to avoid
+    instructions?: string[]; // General instructions
+    all_ingredients?: string[]; // List of all ingredients
+    createdAt?: Date; // Timestamp when the plan was created
+    updatedAt?: Date; // Timestamp when the plan was last updated
+}

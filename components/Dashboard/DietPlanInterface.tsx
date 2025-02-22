@@ -1,30 +1,31 @@
 "use client";
-
 import { useState, useRef, useEffect } from "react";
 import { DietPlan } from "@/lib/actions/dietplan.action";
+import { DietPlanTypes } from "@/types/index"
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { UserOptions, fixedOptions } from "@/types/dietPlan";
 
-const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
-export default function DietPlanInterface({ generatePlan }: { generatePlan: () => Promise<DietPlan | { error: string }> }) {
-    const [dietPlan, setDietPlan] = useState<DietPlan | null>(null);
+export default function DietPlanInterface({ generatePlan }: { generatePlan: (options: UserOptions) => Promise<DietPlan | { error: string }> }) {
+    const [dietPlan, setDietPlan] = useState<DietPlanTypes | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [userData, setUserData] = useState<any>(null);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const printRef = useRef<HTMLDivElement>(null);
     const COLORS = ['#00ff0d', '#02a10a', '#027008']
 
+    // Retry Logic
+    const [retryCount, setRetryCount] = useState(0);
+    const [retryMessage, setRetryMessage] = useState<string | null>(null);
+
     const getMacronutrientData = () => {
         if (!dietPlan?.macronutrient_distribution) return [];
-
         // Extract numerical values from strings like "150g"
         const extractGrams = (str: string) => parseFloat(str.replace('g', ''));
 
@@ -40,6 +41,26 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: () =
         ];
     };
 
+    // 🟢 Fetch user data on component mount
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await fetch('/api/user');
+                if (!response.ok) {
+                    throw new Error("Failed to fetch user data");
+                }
+                const data = await response.json();
+                setUserData(data); // Store user data in state
+                console.log("User data fetched:", data.user);
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                setError("Failed to load user data. Using default values.");
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
     // 🟢 Load stored plan on component mount
     useEffect(() => {
         const fetchDietPlan = async () => {
@@ -49,72 +70,123 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: () =
                 if (!response.ok) throw new Error("Failed to fetch diet plan");
 
                 const data = await response.json();
-                if (data.dietPlans?.length > 0) {
-                    setDietPlan(data.dietPlans[0]);
-                    // Check if there's a local plan that needs cleanup
-                    const localPlan = localStorage.getItem("dietPlan");
-                    if (localPlan) localStorage.removeItem("dietPlan");
+                console.log("API Response:", data);
+
+                if (data.dietPlan) {
+                    setDietPlan(data.dietPlan);
+                    localStorage.removeItem("dietPlan"); // Cleanup any old local storage
+                } else {
+                    setDietPlan(null); // No diet plan exists
                 }
             } catch (error) {
                 console.error("Error fetching diet plan:", error);
-                setError("Failed to load diet plan");
+                setError("No Diet Plan found.");
             } finally {
                 setLoading(false);
             }
         };
 
         fetchDietPlan();
-    }, []);
+    }, []); // Only run on component mount
 
-
-    // 🟢 Handle Diet Plan Generation
-    const handleGenerate = async () => {
+    const handleGenerate = async (currentRetry = 0) => {
+        if (!userData) {
+            setError("User data not loaded. Please wait and try again.");
+            return;
+        }
+    
         setLoading(true);
         setError(null);
-
+        setRetryMessage(null);
+        const maxRetries = 5;
+    
         try {
-            // Generate new plan
-            const result = await generatePlan();
-            if ("error" in result) throw new Error(result.error);
-
-            // Try to store in database first
-            const saveResponse = await fetch(`${window.location.origin}/api/dietplans`, {
+            // Ensure userData exists before merging
+            const mergedOptions: UserOptions = {
+                age: userData.age || 24, // Default value as a fallback
+                weight: userData.weight || 72,
+                height: userData.height || 160,
+                gender: userData.gender || "Male",
+                dietaryRestrictions: userData.dietaryRestrictions || "Vegetarian",
+                preferredTimeSpan: userData.preferredTimeSpan || 7,
+                healthIssues: userData.healthIssues || "none",
+                fitnessGoal: userData.fitnessGoal || "Weight Loss",
+                activityLevel: userData.activityLevel || "Light Exercise",
+                lifestyle: userData.lifestyle || "Non-smoker",
+                country: userData.country || "Pakistan",
+                region: userData.region || "Peshawar",
+                mealType: userData.mealType || "Balanced",
+                preferredCuisine: userData.preferredCuisine || "Pakistani",
+                cookingStyle: userData.cookingStyle || "Takeout",
+                mealFrequency: userData.mealFrequency || "3 meals per day",
+                avoidFoods: userData.avoidFoods || "Mention Foods to be strictly avoided",
+            };
+    
+            console.log("✅ Merged options:", mergedOptions);
+    
+            let result: DietPlan | { error: string } = { error: "" };
+            let isValidPlan = false;
+    
+            // Retry loop
+            for (let attempt = currentRetry; attempt < maxRetries; attempt++) {
+                try {
+                    setRetryMessage(`Retrying generation plan (${attempt + 1}/${maxRetries})`);
+                    result = await generatePlan(mergedOptions);
+    
+                    if ("error" in result) throw new Error(result.error);
+                    if (!validateDietPlan(result)) throw new Error("Invalid diet plan structure received");
+    
+                    isValidPlan = true;
+                    break;
+                } catch (err: any) {
+                    console.error(`Attempt ${attempt + 1} failed:`, err);
+                    if (attempt === maxRetries - 1) throw err;
+                    await new Promise((resolve) => setTimeout(resolve, 2000));
+                }
+            }
+    
+            if (!isValidPlan) throw new Error("Failed to generate a valid diet plan after 5 attempts");
+    
+            // Save to database
+            const saveResponse = await fetch("/api/dietplans", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(result),
             });
-
-            if (!saveResponse.ok) {
-                throw new Error("Failed to store in database");
-            }
-
-            // If DB save successful, fetch fresh copy from DB
-            const fetchResponse = await fetch(`${window.location.origin}/api/dietplans`);
+    
+            if (!saveResponse.ok) throw new Error("Failed to store in database");
+    
+            // Fetch updated plan
+            const fetchResponse = await fetch("/api/dietplans");
             if (!fetchResponse.ok) throw new Error("Failed to fetch updated plan");
-
+    
             const dbData = await fetchResponse.json();
-            if (dbData.dietPlans?.length > 0) {
-                setDietPlan(dbData.dietPlans[0]);
-                localStorage.removeItem("dietPlan"); // Cleanup any local storage
+            if (dbData.dietPlan) {
+                setDietPlan(dbData.dietPlan);
+                localStorage.removeItem("dietPlan");
             }
-
         } catch (err: any) {
             console.error("❌ Error:", err);
-            setError(err.message || "Operation failed");
-
-            // Fallback to local storage
-            if (err.message.includes("database")) {
-                localStorage.setItem("dietPlan", JSON.stringify({
-                    data: result,
-                    timestamp: Date.now(),
-                    retryAfter: Date.now() + 24 * 60 * 60 * 1000
-                }));
-                setDietPlan(result);
-                alert("Plan saved locally. We'll try to save to database later.");
+            if (retryCount < maxRetries - 1) {
+                setRetryCount((prev) => prev + 1);
+                setTimeout(() => handleGenerate(retryCount + 1), 2000);
+            } else {
+                setError(err.message.includes("5 attempts") ? "Server is busy. Try again later." : err.message);
             }
         } finally {
             setLoading(false);
+            setRetryMessage(null);
         }
+    };
+    
+
+    // Diet plan validation function
+    const validateDietPlan = (plan: any): plan is DietPlan => {
+        return (
+            plan?.daily_plan?.length > 0 &&
+            plan?.macronutrient_distribution &&
+            plan?.calories_per_day
+        );
     };
 
     // 🟢 Auto-Retry Database Storage
@@ -155,23 +227,55 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: () =
         retryStorage();
     }, []);
 
-    // 🟢 Handle Delete
     const handleConfirmDelete = async () => {
-        if (!dietPlan?._id) return;
+        if (!dietPlan?._id) {
+            console.error("No diet plan ID found");
+            return;
+        }
 
         try {
+            // console.log("Deleting diet plan with ID:", dietPlan._id);
+
             const response = await fetch(`${window.location.origin}/api/dietplans/${dietPlan._id}`, {
                 method: "DELETE",
             });
 
-            if (!response.ok) throw new Error("Failed to delete diet plan");
+            // Log the response for debugging
+            console.log("Response status:", response.status);
+            console.log("Response headers:", response.headers);
+
+            if (!response.ok) {
+                // Attempt to parse the error response
+                const errorText = await response.text();
+                console.error("API Error Response:", errorText);
+
+                // If the response is HTML, throw a custom error
+                if (errorText.startsWith("<!DOCTYPE html>")) {
+                    throw new Error("Received HTML response. Check the API endpoint.");
+                }
+
+                // If the response is JSON, parse it
+                try {
+                    const errorData = JSON.parse(errorText);
+                    throw new Error(errorData.error || "Failed to delete diet plan");
+                } catch (jsonError) {
+                    throw new Error(errorText || "Failed to delete diet plan");
+                }
+            }
 
             setDietPlan(null);
             setShowDeleteConfirmation(false);
             localStorage.removeItem("dietPlan");
+
+            console.log("Diet plan deleted successfully");
+
         } catch (error) {
             console.error("❌ Error deleting diet plan:", error);
-            setError("Failed to delete diet plan. Please try again.");
+            if (error instanceof Error) {
+                setError(error.message || "Failed to delete diet plan. Please try again.");
+            } else {
+                setError("Failed to delete diet plan. Please try again.");
+            }
         }
     };
 
@@ -285,6 +389,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: () =
         }
     };
 
+
     return (
         <div className="p-4 md:p-6 w-full bg-gray-50 rounded-2xl border-2 mx-auto space-y-6">
             {/* Delete Confirmation Modal */}
@@ -320,13 +425,20 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: () =
             {/* Control Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
                 <Button
-                    onClick={dietPlan ? handleDelete : handleGenerate}
+                    onClick={dietPlan ? handleDelete : () => handleGenerate()}
                     size="lg"
                     variant={dietPlan ? "destructive" : "default"}
-                    className="w-full sm:w-auto hover:scale-105 transition-transform bg-red-500 text-white font-semibold "
+                    className="w-full sm:w-auto hover:scale-105 transition-transform bg-red-500 text-white font-semibold"
                     disabled={loading}
                 >
-                    {loading ? "Generating..." : (dietPlan ? "Delete Plan" : "Generate Plan")}
+                    {loading ? (
+                        <>
+                            {retryMessage || "Generating..."}
+                            <span className="ml-2 animate-pulse">...</span>
+                        </>
+                    ) : (
+                        dietPlan ? "Delete Plan" : "Generate Plan"
+                    )}
                 </Button>
 
                 {dietPlan && (
