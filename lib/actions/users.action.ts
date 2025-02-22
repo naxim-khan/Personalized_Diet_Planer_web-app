@@ -3,6 +3,7 @@
 
 import { createSessionClient } from "../appwrite";
 import { createAdminClient } from "../appwrite";
+import { Databases } from "node-appwrite";
 import { ID } from "node-appwrite";
 import { cookies } from "next/headers";
 import { parseStringify } from "../utils";
@@ -34,9 +35,31 @@ export const signIn = async ({ email, password }: signInProps) => {
 
 export const signUp = async (userData: SignUpParams) => {
     try {
-        const { account } = await createAdminClient();
-        const { email, password, firstName, lastName } = userData;
+        const { account, databases } = await createAdminClient();
+        const {
+            // Existing fields
+            firstName,
+            lastName,
+            // New fields
+            age,
+            weight,
+            height,
+            gender,
+            dietaryRestrictions,
+            healthIssues,
+            fitnessGoal,
+            activityLevel,
+            lifestyle,
+            country,
+            region,
+            mealType,
+            preferredCuisine,
+            cookingStyle,
+            email,
+            password
+        } = userData;
 
+        // Create auth account
         const newUserAccount = await account.create(
             ID.unique(),
             email,
@@ -44,24 +67,41 @@ export const signUp = async (userData: SignUpParams) => {
             `${firstName} ${lastName}`
         );
 
-        const session = await account.createEmailPasswordSession(email, password);
+        // Create database document
+        const userProfile = await databases.createDocument(
+            process.env.APPWRITE_DATABASE_ID!,
+            process.env.APPWRITE_USER_COLLECTION_ID!,
+            ID.unique(),
+            {
+                userId: newUserAccount.$id,
+                // All user profile fields
+                firstName,
+                lastName,
+                email,
+                age,
+                weight,
+                height,
+                gender,
+                dietaryRestrictions,
+                healthIssues,
+                fitnessGoal,
+                activityLevel,
+                lifestyle,
+                country,
+                region,
+                mealType,
+                preferredCuisine,
+                cookingStyle
+            }
+        );
 
-        // ✅ Fixed: Use cookies() directly with await
-        (await cookies()).set({
-            name: "appwrite-session",
-            value: session.secret,
-            path: "/",
-            httpOnly: true,
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-        });
-
-        return parseStringify({ success: true, user: newUserAccount });
+        return parseStringify({ success: true, user: userProfile });
     } catch (error) {
-        console.error("Error in signUp:", error);
-        return parseStringify({
-            error: error instanceof Error ? error.message : "Sign-up failed",
-            success: false
+        console.error("Error:", error);
+        const errorMessage = error instanceof Error ? error.message : "Sign-up failed";
+        return parseStringify({ 
+            success: false,
+            error: errorMessage
         });
     }
 };

@@ -7,9 +7,9 @@ declare interface HeaderBoxProps {
 
 declare interface NavbarProps {
   user?: {
-      name: string;
-      email: string;
-      // Add other user properties as needed
+    name: string;
+    email: string;
+    // Add other user properties as needed
   } | null;
 }
 /* eslint-disable no-unused-vars */
@@ -18,18 +18,31 @@ declare type SearchParamProps = {
   params: { [key: string]: string };
   searchParams: { [key: string]: string | string[] | undefined };
 };
- 
+
 // ========================================
+declare type AuthResponse = {
+  success: boolean;
+  user?: any;
+  error?: string;
+};
 
 declare type SignUpParams = {
-  firstName: string;
-  lastName: string;
-  address1?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  dateOfBirth?: string;
-  ssn?: string;
+  firstName?: string;
+  lastName?: string;
+  age?: number;
+  weight?: number;
+  height?: number;
+  gender?: "Male" | "Female" | "Other";
+  dietaryRestrictions: string;
+  healthIssues: string;
+  fitnessGoal: string;
+  activityLevel: string;
+  lifestyle: string;
+  country: string;
+  region: string;
+  mealType: string;
+  preferredCuisine: string;
+  cookingStyle: string;
   email: string;
   password: string;
 };

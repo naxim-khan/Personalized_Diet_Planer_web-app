@@ -11,13 +11,14 @@ import { Button } from "@/components/ui/button"
 import {
     Form,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+// import { Input } from "@/components/ui/input"
 import CustomInput from '@/components/CustomInput'
 import { authformSchema } from "../../lib/utils"
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import { signIn, signUp } from '@/lib/actions/users.action'
+import CustomSelect from '@/components/CustomSelect'
 
 const AuthForm = ({ type }: { type: string }) => {
     const router = useRouter();
@@ -27,50 +28,75 @@ const AuthForm = ({ type }: { type: string }) => {
     const formSchema = authformSchema(type);
 
     // 1. Define your form.
+    // Replace your current useForm initialization with:
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             email: "",
-            password: ''
+            password: '',
+            ...(type === 'sign-up' ? {
+                firstName: '',
+                lastName: '',
+                age: undefined,  // Changed from 0
+                weight: undefined, // Changed from 0
+                height: undefined, // Changed from 0
+                gender: undefined, // Changed from ''
+                dietaryRestrictions: undefined,
+                healthIssues: '',
+                fitnessGoal: undefined,
+                activityLevel: undefined,
+                lifestyle: undefined,
+                country: '',
+                region: '',
+                mealType: undefined,
+                preferredCuisine: undefined,
+                cookingStyle: undefined
+            } : {})
         },
     })
 
     // 2. Define a submit handler.
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
         setIsLoading(true);
-
         try {
-            // Sign up with Appwrite & create plaid token
-
             if (type === 'sign-up') {
-                const userData = {
-                    firstName: data.firstName!,
-                    lastName: data.lastName!,
-                    address1: data.address1!,
-                    city: data.city!,
-                    state: data.state!,
-                    postalCode: data.postalCode!,
-                    dob: data.dob!,
-                    ssn: data.ssn!,
-                    email: data.email,
-                    password: data.password
+                const response = await signUp(data as SignUpParams);
+
+                if (response?.error) {
+                    form.setError('root', {
+                        type: 'manual',
+                        message: response.error
+                    });
+                    return;
                 }
 
-                const newUser = await signUp(userData);
-
-                setUser(newUser);
+                if (response?.user) {
+                    setUser(response.user);
+                    router.push('/dashboard');
+                }
             }
 
             if (type === 'sign-in') {
                 const response = await signIn({
                     email: data.email,
                     password: data.password,
-                })
+                });
 
-                if (response) router.push('/dashboard')
+                if (response?.error) {
+                    form.setError('root', {
+                        type: 'manual',
+                        message: response.error
+                    });
+                    return;
+                }
+
+                if (response) router.push('/dashboard');
             }
-        } catch (error) {
-            console.log(error);
+        } catch (error: any) {
+            form.setError('root', {
+                type: 'manual',
+                message: error.message || 'An unexpected error occurred'
+            });
         } finally {
             setIsLoading(false);
         }
@@ -116,61 +142,173 @@ const AuthForm = ({ type }: { type: string }) => {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                             {type === 'sign-up' && (
                                 <>
-                                    <div className='flex gap-4'>
+                                    {/* Existing personal info fields */}
+                                    <div className="flex gap-4">
                                         <CustomInput
                                             control={form.control}
-                                            name='firstName'
-                                            label='First Name'
-                                            placeholder="Enter your first name"
+                                            name="firstName"
+                                            label="First Name"
+                                            placeholder="FirstName"
+                                            type="string"
                                         />
                                         <CustomInput
                                             control={form.control}
-                                            name='lastName'
-                                            label='Last Name'
-                                            placeholder="Enter your last name"
+                                            name="lastName"
+                                            label="Weight (kg)"
+                                            placeholder="LastName"
+                                            type="string"
                                         />
                                     </div>
-                                    <CustomInput
+                                    {/* New diet/fitness fields */}
+                                    <div className="flex gap-4">
+                                        <CustomInput
+                                            control={form.control}
+                                            name="age"
+                                            label="Age"
+                                            placeholder="Enter your age"
+                                            type="number"
+                                        />
+                                        <CustomInput
+                                            control={form.control}
+                                            name="weight"
+                                            label="Weight (kg)"
+                                            placeholder="Enter your weight"
+                                            type="number"
+                                        />
+                                        <CustomInput
+                                            control={form.control}
+                                            name="height"
+                                            label="Height (cm)"
+                                            placeholder="Enter your height"
+                                            type="number"
+                                        />
+                                    </div>
+
+                                    <CustomSelect
                                         control={form.control}
-                                        name='address1'
-                                        label='Address'
-                                        placeholder="Enter your specific Address"
-                                    />
-                                    <CustomInput
-                                        control={form.control}
-                                        name='city'
-                                        label='City'
-                                        placeholder="Enter your City"
+                                        name="gender"
+                                        label="Gender"
+                                        placeholder="Select gender"
+                                        options={[
+                                            { value: "Male", label: "Male" },
+                                            { value: "Female", label: "Female" },
+                                            { value: "Other", label: "Other" }
+                                        ]}
                                     />
 
-                                    <div className='flex gap-4'>
-                                        <CustomInput
-                                            control={form.control}
-                                            name='state'
-                                            label='State'
-                                            placeholder="ex: NY"
-                                        />
-                                        <CustomInput
-                                            control={form.control}
-                                            name='postalCode'
-                                            label='Postal Code'
-                                            placeholder="ex: 1234"
-                                        />
-                                    </div>
-                                    <div className='flex gap-4'>
-                                        <CustomInput
-                                            control={form.control}
-                                            name='dob'
-                                            label='Date of Birth'
-                                            placeholder="YYYY-MM-DD"
-                                        />
-                                        <CustomInput
-                                            control={form.control}
-                                            name='ssn'
-                                            label='SSN'
-                                            placeholder="ex: 1234"
-                                        />
-                                    </div>
+                                    <CustomSelect
+                                        control={form.control}
+                                        name="dietaryRestrictions"
+                                        label="Dietary Restrictions"
+                                        placeholder="Select restrictions"
+                                        options={[
+                                            { value: "None", label: "None" },
+                                            { value: "Vegetarian", label: "Vegetarian" },
+                                            { value: "Vegan", label: "Vegan" },
+                                            { value: "Gluten-Free", label: "Gluten-Free" },
+                                            { value: "Dairy-Free", label: "Dairy-Free" },
+                                            { value: "Other", label: "Other" }
+                                        ]}
+                                    />
+
+                                    <CustomInput
+                                        control={form.control}
+                                        name="healthIssues"
+                                        label="Health Issues"
+                                        placeholder="Comma-separated health issues"
+                                    />
+
+                                    <CustomSelect
+                                        control={form.control}
+                                        name="fitnessGoal"
+                                        label="Fitness Goal"
+                                        placeholder="Select fitness goal"
+                                        options={[
+                                            { value: "Muscle Gain", label: "Muscle Gain" },
+                                            { value: "Weight Loss", label: "Weight Loss" },
+                                            { value: "Maintenance", label: "Maintenance" },
+                                            { value: "Other", label: "Other" }
+                                        ]}
+                                    />
+
+                                    <CustomSelect
+                                        control={form.control}
+                                        name="activityLevel"
+                                        label="Activity Level"
+                                        placeholder="Select activity level"
+                                        options={[
+                                            { value: "Little to No Exercise", label: "Little to No Exercise" },
+                                            { value: "Light Exercise", label: "Light Exercise" },
+                                            { value: "Moderate Exercise", label: "Moderate Exercise" },
+                                            { value: "Heavy Exercise", label: "Heavy Exercise" }
+                                        ]}
+                                    />
+
+                                    <CustomSelect
+                                        control={form.control}
+                                        name="lifestyle"
+                                        label="Lifestyle"
+                                        placeholder="Select lifestyle"
+                                        options={[
+                                            { value: "Non-smoker", label: "Non-smoker" },
+                                            { value: "Smoker", label: "Smoker" },
+                                            { value: "Occasional Smoker", label: "Occasional Smoker" },
+                                            { value: "Other", label: "Other" }
+                                        ]}
+                                    />
+
+                                    <CustomInput
+                                        control={form.control}
+                                        name="country"
+                                        label="Country"
+                                        placeholder="Enter your country"
+                                    />
+
+                                    <CustomInput
+                                        control={form.control}
+                                        name="region"
+                                        label="Region"
+                                        placeholder="Enter your region"
+                                    />
+
+                                    <CustomSelect
+                                        control={form.control}
+                                        name="mealType"
+                                        label="Meal Type"
+                                        placeholder="Select meal type"
+                                        options={[
+                                            { value: "Balanced", label: "Balanced" },
+                                            { value: "High Protein", label: "High Protein" },
+                                            { value: "Low Carb", label: "Low Carb" },
+                                            { value: "Other", label: "Other" }
+                                        ]}
+                                    />
+
+                                    <CustomSelect
+                                        control={form.control}
+                                        name="preferredCuisine"
+                                        label="Preferred Cuisine"
+                                        placeholder="Select cuisine"
+                                        options={[
+                                            { value: "Pakistani", label: "Pakistani" },
+                                            { value: "Italian", label: "Italian" },
+                                            { value: "Mexican", label: "Mexican" },
+                                            { value: "Other", label: "Other" }
+                                        ]}
+                                    />
+
+                                    <CustomSelect
+                                        control={form.control}
+                                        name="cookingStyle"
+                                        label="Cooking Style"
+                                        placeholder="Select cooking style"
+                                        options={[
+                                            { value: "Home-Cooked", label: "Home-Cooked" },
+                                            { value: "Restaurant", label: "Restaurant" },
+                                            { value: "Takeout", label: "Takeout" },
+                                            { value: "Other", label: "Other" }
+                                        ]}
+                                    />
                                 </>
                             )}
                             <CustomInput
@@ -197,14 +335,14 @@ const AuthForm = ({ type }: { type: string }) => {
                         </form>
                     </Form>
 
-                    <footer className='flex justify-center gap-1'>
+                    <div className='flex justify-center gap-1'>
                         <p className='text-14 font-normal text-gray-600'>
                             {type === 'sign-in' ? "Don't have an account?" : "Already have an Account?"}
                         </p>
-                        <Link href={type === 'sign-in' ? '/sign-up' : '/sign-in'}>
+                        <Link className='underline text-green-700' href={type === 'sign-in' ? '/sign-up' : '/sign-in'}>
                             {type === 'sign-in' ? 'Sign Up' : 'Sign In'}
                         </Link>
-                    </footer>
+                    </div>
                 </>
             )}
         </section>

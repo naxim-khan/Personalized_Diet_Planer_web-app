@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from "framer-motion";
 import { FadeRight, FadeLeft } from '@/components/utility/animation';
 import TeamShowCase from "@/components/Landing/TeamShowCase/TeamShowCase";
-import { FaArrowLeft } from "react-icons/fa";
+// import { FaArrowLeft } from "react-icons/fa";
 import { AnimatedTooltip } from "@/components/ui/animated-tooltip";
 
 
@@ -70,7 +70,6 @@ const Team = () => {
                             </div>
                         </div>
                     </div>
-
                 </div>
                 <TeamShowCase />
             </div>

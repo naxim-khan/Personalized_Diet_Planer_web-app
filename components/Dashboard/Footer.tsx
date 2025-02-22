@@ -37,7 +37,7 @@ const Footer = ({ user, type = 'desktop', isExpanded }: FooterProps) => {
             </div>
 
             <div className="relative size-7  w-full flex items-center justify-center"  onClick={handleLogOut} title='logout'>
-                <Image src="icons/logout.svg" fill alt="jsm" />
+                <Image src="/icons/logout.svg" fill alt="jsm" />
             </div>
         </div>
     )

@@ -389,3 +389,16 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+@media print {
+  .recharts-wrapper {
+    visibility: visible !important;
+  }
+  .badge {
+    background-color: transparent !important;
+    border: 1px solid #000 !important;
+  }
+  .card {
+    page-break-inside: avoid;
+  }
+}
