@@ -1,4 +1,4 @@
-// 'use client'
+'use client'
 // import React, { useState, useEffect } from 'react';
 import DummyDashboard from "@/components/Dashboard/DummyDashboard";
 // import Dashboard from "@/components/Dashboard/Dashboard";
