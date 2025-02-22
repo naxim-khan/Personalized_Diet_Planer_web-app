@@ -1,9 +1,9 @@
 "use client";
 import React from 'react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
-import HeaderBox from "@/components/Dashboard/HeaderBox";
-import RightSidebar from '@/components/Dashboard/RightSidebar';
-import ChartsCards from "@/components/Dashboard/ChartsCards";
+import HeaderBox from "../../components/Dashboard/HeaderBox";
+import RightSidebar from '../../components/Dashboard/RightSidebar';
+import ChartsCards from "../../components/Dashboard/ChartsCards";
 
 const Dashboard = ({ loggedIn }) => {
   return (

@@ -2,10 +2,10 @@
 import React from 'react';
 // import { FaArrowRight } from "react-icons/fa6";
 import { motion } from "framer-motion";
-import { FadeRight, FadeLeft } from '@/components/utility/animation';
-import TeamShowCase from "@/components/Landing/TeamShowCase/TeamShowCase";
+import { FadeRight, FadeLeft } from '../../components/utility/animation';
+import TeamShowCase from "../../components/Landing/TeamShowCase/TeamShowCase";
 // import { FaArrowLeft } from "react-icons/fa";
-import { AnimatedTooltip } from "@/components/ui/animated-tooltip";
+import { AnimatedTooltip } from "../../components/ui/animated-tooltip";
 
 
 const Team = () => {
