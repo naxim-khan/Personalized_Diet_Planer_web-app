@@ -1,7 +1,7 @@
 "use client"
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { FadeLeft } from '@/components/utility/animation';
+import { FadeLeft } from '../../utility/animation';
 import { FaRegClipboard, FaShoppingCart, FaUsers } from "react-icons/fa";
 import { GiCookingPot } from "react-icons/gi";
 

@@ -2,8 +2,8 @@
 import React from 'react';
 import AnimatedCounter from './AnimatedCounter';
 // Charts
-import DoughnutChart from "@/components/charts/DoughnutChart";
-import PieChart from "@/components/charts/PieChart";
+import DoughnutChart from "../../components/charts/DoughnutChart";
+import PieChart from "../../components/charts/PieChart";
 
 import Link from 'next/link';
 import { FaExternalLinkAlt } from 'react-icons/fa';

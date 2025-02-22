@@ -9,15 +9,15 @@ import {
     CardHeader,
     CardTitle,
     CardDescription,
-} from "@/components/ui/card";
+} from "../../../components/ui/card";
 import {
     Carousel,
     CarouselContent,
     CarouselItem,
     CarouselNext,
     CarouselPrevious,
-} from "@/components/ui/carousel";
-import { FadeUp } from "@/components/utility/animation";
+} from "../../../components/ui/carousel";
+
 
 const HowItWorks = () => {
     const steps = [

@@ -1,7 +1,7 @@
 // app/diet-plan/page.tsx
-import DietPlanInterface from "@/components/Dashboard/DietPlanInterface";
-import { generateDietPlan } from "@/lib/actions/dietplan.action";
-import HeaderBox from "@/components/Dashboard/HeaderBox";
+import DietPlanInterface from "../../../components/Dashboard/DietPlanInterface";
+import { generateDietPlan } from "../../../lib/actions/dietplan.action";
+import HeaderBox from "../../../components/Dashboard/HeaderBox";
 
 export default function DietPlanPage() {
   return (

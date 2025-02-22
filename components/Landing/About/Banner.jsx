@@ -2,7 +2,7 @@
 import React from 'react';
 import { FaInfoCircle, FaLaptop } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import { FadeRight, FadeUp, FadeLeft } from '@/components/utility/animation';
+import { FadeRight, FadeUp, FadeLeft } from '../../utility/animation';
 import Link from 'next/link';
 
 const Banner = () => {

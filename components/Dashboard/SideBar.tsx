@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { sidebarLinks } from '@/constants/index';
-import { cn } from '@/lib/utils';
+import { sidebarLinks } from '../../constants/index';
+import { cn } from '../lib/utils';
 import { usePathname } from 'next/navigation';
 import Footer from './Footer';
-
+import { SiderbarProps } from '../../types/index';
 const SideBar = ({ user }: SiderbarProps) => {
     const pathname = usePathname();
     const [isExpanded, setIsExpanded] = useState(false);

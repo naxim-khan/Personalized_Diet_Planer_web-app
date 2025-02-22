@@ -1,7 +1,7 @@
 "use client"
 import React from 'react'
-import ColourfulText from "@/components/ui/colourful-text";
-// import {HeaderBoxProps} from "@/types/index";
+import ColourfulText from "../ui/colourful-text";
+import {HeaderBoxProps} from "../../types/index";
 
 const HeaderBox = ({ type = "title", title, subtext, user }: HeaderBoxProps) => {
     return (

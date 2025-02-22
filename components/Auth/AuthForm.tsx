@@ -7,18 +7,17 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "../../components/ui/button"
 import {
     Form,
-} from "@/components/ui/form"
-// import { Input } from "@/components/ui/input"
-import CustomInput from '@/components/CustomInput'
+} from "../../components/ui/form"
+import CustomInput from '../../components/CustomInput'
 import { authformSchema } from "../../lib/utils"
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-
-import { signIn, signUp } from '@/lib/actions/users.action'
-import CustomSelect from '@/components/CustomSelect'
+import { SignUpParams } from '../../types/index'
+import { signIn, signUp } from '../../lib/actions/users.action'
+import CustomSelect from '../../components/CustomSelect'
 
 const AuthForm = ({ type }: { type: string }) => {
     const router = useRouter();

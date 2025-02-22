@@ -2,9 +2,10 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { cn } from '@/lib/utils'
-import { sidebarLinks } from '@/constants'
+import { cn } from '../lib/utils'
+import { sidebarLinks } from '../../constants'
 import { usePathname } from 'next/navigation'
+import { MobileNavProps } from '../../types/index'
 import {
     Sheet,
     SheetClose,
@@ -13,7 +14,7 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-} from "@/components/ui/sheet"
+} from "../../components/ui/sheet"
 import Footer from './Footer'
 
 const MobileNav = ({ user }: MobileNavProps) => {

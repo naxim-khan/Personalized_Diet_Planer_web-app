@@ -2,7 +2,7 @@
 import React from 'react';
 import { FaArrowRight } from "react-icons/fa6";
 import { motion } from "framer-motion";
-import { FadeRight, FadeUp, FadeLeft } from '@/components/utility/animation';
+import { FadeRight, FadeUp, FadeLeft } from '../../utility/animation';
 import Link from 'next/link';
 
 const Hero = () => {
