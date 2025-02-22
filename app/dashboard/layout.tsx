@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { ReactNode } from "react";
 import SideBar from "@/components/Dashboard/SideBar";
 import Image from "next/image";

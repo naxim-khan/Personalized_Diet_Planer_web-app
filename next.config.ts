@@ -68,6 +68,10 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["localhost", "vssknvcj-3000.inc1.devtunnels.ms"],
   },
+  // Add this to handle dynamic routes properly
+  output: "standalone", // Recommended for production
+  // Add this to handle static generation issues
+  trailingSlash: true, // Ensures consistent URL handling
 };
 
 export default nextConfig;
