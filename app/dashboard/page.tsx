@@ -5,6 +5,7 @@ import DummyDashboard from "../../components/Dashboard/DummyDashboard";
 // import Dashboard from "@/components/Dashboard/Dashboard";
 import { getLoggedInUser } from "../../lib/actions/users.action";
 import Dashboard from "../../components/Dashboard/Dashboard";
+import "../globals.css";
 
 const Home = async () => {
     // const [isLoading, setIsLoading] = useState(true);

@@ -1,6 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
-import logo from '@/public/icons/logout.svg'
+import logo from '../../public/icons/logout.svg'
 import { logoutAccount } from '../../lib/actions/users.action'
 import { FooterProps } from '../../types/index'
 import { useRouter } from 'next/navigation'

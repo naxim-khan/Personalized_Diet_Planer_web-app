@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/appwrite";
+import { createAdminClient } from "../../lib/appwrite";
 
 export async function storeDietPlanInDB(userId: string, dietPlan: any) {
     try {

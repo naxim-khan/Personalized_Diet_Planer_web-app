@@ -44,7 +44,7 @@ const SideBar = ({ user }: SiderbarProps) => {
                             <Link
                                 href={item.route}
                                 key={item.label}
-                                className={cn('sidebar-link', { 'bg-gradient-green': isActive })}
+                                className={cn('flex gap-3  py-1 md:p-3 2xl:p-4 rounded-lg xl:justify-start transition-colors items-start justify-start', { 'bg-green-700': isActive })}
                             // onClick={() => setIsExpanded(!isExpanded)}
                             >
                                 <div className='relative size-6'>

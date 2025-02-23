@@ -7,8 +7,8 @@ import { Databases } from "node-appwrite";
 import { ID } from "node-appwrite";
 import { cookies } from "next/headers";
 import { parseStringify } from "../utils";
-import { SignUpParams } from "@/types";
-import { signInProps } from "@/types";
+import { SignUpParams } from "../../types";
+import { signInProps } from "../../types";
 
 export const signIn = async ({ email, password }: signInProps) => {
     try {

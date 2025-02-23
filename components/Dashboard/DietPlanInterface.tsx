@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { DietPlan } from "../../lib/actions/dietplan.action";
-import { DietPlanTypes } from "@/types/index"
+import { DietPlanTypes } from "../../types/index"
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Button } from "../../components/ui/button";
@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Alert, AlertTitle, AlertDescription } from "../../components/ui/alert";
 import { Badge } from "../../components/ui/badge";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { UserOptions, fixedOptions } from "@/types/dietPlan";
+import { UserOptions, fixedOptions } from "../../types/dietPlan";
+import { user } from "@heroui/theme";
 
 export default function DietPlanInterface({ generatePlan }: { generatePlan: (options: UserOptions) => Promise<DietPlan | { error: string }> }) {
     const [dietPlan, setDietPlan] = useState<DietPlanTypes | null>(null);
@@ -94,12 +95,12 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
             setError("User data not loaded. Please wait and try again.");
             return;
         }
-    
+
         setLoading(true);
         setError(null);
         setRetryMessage(null);
         const maxRetries = 5;
-    
+
         try {
             // Ensure userData exists before merging
             const mergedOptions: UserOptions = {
@@ -121,21 +122,21 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                 mealFrequency: userData.mealFrequency || "3 meals per day",
                 avoidFoods: userData.avoidFoods || "Mention Foods to be strictly avoided",
             };
-    
+
             console.log("✅ Merged options:", mergedOptions);
-    
+
             let result: DietPlan | { error: string } = { error: "" };
             let isValidPlan = false;
-    
+
             // Retry loop
             for (let attempt = currentRetry; attempt < maxRetries; attempt++) {
                 try {
                     setRetryMessage(`Retrying generation plan (${attempt + 1}/${maxRetries})`);
                     result = await generatePlan(mergedOptions);
-    
+
                     if ("error" in result) throw new Error(result.error);
                     if (!validateDietPlan(result)) throw new Error("Invalid diet plan structure received");
-    
+
                     isValidPlan = true;
                     break;
                 } catch (err: any) {
@@ -144,22 +145,22 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                     await new Promise((resolve) => setTimeout(resolve, 2000));
                 }
             }
-    
+
             if (!isValidPlan) throw new Error("Failed to generate a valid diet plan after 5 attempts");
-    
+
             // Save to database
             const saveResponse = await fetch("/api/dietplans", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(result),
             });
-    
+
             if (!saveResponse.ok) throw new Error("Failed to store in database");
-    
+
             // Fetch updated plan
             const fetchResponse = await fetch("/api/dietplans");
             if (!fetchResponse.ok) throw new Error("Failed to fetch updated plan");
-    
+
             const dbData = await fetchResponse.json();
             if (dbData.dietPlan) {
                 setDietPlan(dbData.dietPlan);
@@ -178,7 +179,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
             setRetryMessage(null);
         }
     };
-    
+
 
     // Diet plan validation function
     const validateDietPlan = (plan: any): plan is DietPlan => {
@@ -389,6 +390,21 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
         }
     };
 
+    interface BMICalculation {
+        weight: number;
+        height: number;
+    }
+
+    const calculateBMI = ({ weight, height }: BMICalculation): string => {
+        // Convert height from cm to meters
+        height /= 100;
+
+        // Calculate BMI
+        const bmi = weight / (height ** 2);
+
+        // Return BMI, rounded to 2 decimal places
+        return bmi.toFixed(2);
+    }
 
     return (
         <div className="p-4 md:p-6 w-full bg-gray-50 rounded-2xl border-2 mx-auto space-y-6">
@@ -468,14 +484,44 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                         <CardContent className="p-4 md:p-6 flex flex-col md:flex-row items-center justify-between">
                             <div className="border px-4 rounded-tr-full rounded-bl-full border-green-600 flex items-center justify-center">
                                 <img
-                                    src="/img/logo.png"
+                                    src="/img/LOGO.png"
                                     alt="Site Logo"
                                     className="h-12 md:h-16 mb-4 md:mb-0"
                                 />
                             </div>
                             <h1 className="text-2xl md:text-3xl font-bold text-primary text-green-500">
-                                Personalized Diet Plan
+                                Personalized Diet Plan <span className="text-sm">( {userData.user.fitnessGoal || ""} )</span>
                             </h1>
+
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-destructive rounded-none border-0 border-b-2 border-r-2 shadow-none">
+                        <CardHeader>
+                            <CardTitle className="text-lg text-destructive text-green-600">
+                                {userData.user.firstName + " " + userData.user.lastName}
+                                <span className="text-[0.7rem] border px-[5px] rounded-lg border-green-500 ml-1">{userData.user.country}</span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-wrap gap-2">
+                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">Activity Level: {userData.user.activityLevel}</span>
+                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">CookingStyle: {userData.user.cookingStyle}</span>
+                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">DietaryRestriction: {userData.user.dietaryRestrictions}</span>
+                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">CuisineStyle: {userData.user.preferredCuisine}</span>
+                            <span
+                                className={`
+                                     text-sm border px-2 rounded-lg 
+                                    ${parseFloat(calculateBMI({ weight: userData.user.weight, height: userData.user.height })) < 18.5 ||
+                                        parseFloat(calculateBMI({ weight: userData.user.weight, height: userData.user.height })) >= 25
+                                        ? "border-red-300 text-red-600"
+                                        : parseFloat(calculateBMI({ weight: userData.user.weight, height: userData.user.height })) >= 23
+                                            ? "border-yellow-300 text-yellow-600"
+                                            : "border-green-300 text-green-600"}
+                                    `}
+                            >
+                                BMI: {calculateBMI({ weight: userData.user.weight, height: userData.user.height })}
+                            </span>
+
                         </CardContent>
                     </Card>
 

@@ -1,5 +1,5 @@
 "use server";
-import { UserOptions } from "@/types/dietPlan";
+import { UserOptions } from "../../types/dietPlan";
 
 export type DietPlan = {
     _id?: string;

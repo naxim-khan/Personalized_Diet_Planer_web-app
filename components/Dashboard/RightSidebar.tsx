@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+import { RightSidebarProps } from '../../types/index'
 // import BankCard from './BankCard'
 // import { countTransactionCategories } from '@/lib/utils'
 // import Category from './Category'
