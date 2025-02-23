@@ -499,27 +499,27 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                     <Card className="border-destructive rounded-none border-0 border-b-2 border-r-2 shadow-none">
                         <CardHeader>
                             <CardTitle className="text-lg text-destructive text-green-600">
-                                {userData.user.firstName + " " + userData.user.lastName}
-                                <span className="text-[0.7rem] border px-[5px] rounded-lg border-green-500 ml-1">{userData.user.country}</span>
+                                {userData?.user?.firstName + " " + userData?.user?.lastName}
+                                <span className="text-[0.7rem] border px-[5px] rounded-lg border-green-500 ml-1">{userData?.user?.country}</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-wrap gap-2">
-                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">Activity Level: {userData.user.activityLevel}</span>
-                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">CookingStyle: {userData.user.cookingStyle}</span>
-                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">DietaryRestriction: {userData.user.dietaryRestrictions}</span>
-                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">CuisineStyle: {userData.user.preferredCuisine}</span>
+                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">Activity Level: {userData?.user?.activityLevel}</span>
+                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">CookingStyle: {userData?.user?.cookingStyle}</span>
+                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">DietaryRestriction: {userData?.user?.dietaryRestrictions}</span>
+                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">CuisineStyle: {userData?.user?.preferredCuisine}</span>
                             <span
                                 className={`
                                      text-sm border px-2 rounded-lg 
-                                    ${parseFloat(calculateBMI({ weight: userData.user.weight, height: userData.user.height })) < 18.5 ||
-                                        parseFloat(calculateBMI({ weight: userData.user.weight, height: userData.user.height })) >= 25
+                                    ${parseFloat(calculateBMI({ weight: userData?.user?.weight, height: userData?.user?.height })) < 18.5 ||
+                                        parseFloat(calculateBMI({ weight: userData?.user?.weight, height: userData?.user?.height })) >= 25
                                         ? "border-red-300 text-red-600"
-                                        : parseFloat(calculateBMI({ weight: userData.user.weight, height: userData.user.height })) >= 23
+                                        : parseFloat(calculateBMI({ weight: userData?.user?.weight, height: userData?.user?.height })) >= 23
                                             ? "border-yellow-300 text-yellow-600"
                                             : "border-green-300 text-green-600"}
                                     `}
                             >
-                                BMI: {calculateBMI({ weight: userData.user.weight, height: userData.user.height })}
+                                BMI: {calculateBMI({ weight: userData?.user?.weight, height: userData?.user?.height })}
                             </span>
 
                         </CardContent>
