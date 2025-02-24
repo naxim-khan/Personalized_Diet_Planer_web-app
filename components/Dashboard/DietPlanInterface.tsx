@@ -104,23 +104,23 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
         try {
             // Ensure userData exists before merging
             const mergedOptions: UserOptions = {
-                age: userData.age || 24, // Default value as a fallback
-                weight: userData.weight || 72,
-                height: userData.height || 160,
-                gender: userData.gender || "Male",
-                dietaryRestrictions: userData.dietaryRestrictions || "Vegetarian",
-                preferredTimeSpan: userData.preferredTimeSpan || 7,
-                healthIssues: userData.healthIssues || "none",
-                fitnessGoal: userData.fitnessGoal || "Weight Loss",
-                activityLevel: userData.activityLevel || "Light Exercise",
-                lifestyle: userData.lifestyle || "Non-smoker",
-                country: userData.country || "Pakistan",
-                region: userData.region || "Peshawar",
-                mealType: userData.mealType || "Balanced",
-                preferredCuisine: userData.preferredCuisine || "Pakistani",
-                cookingStyle: userData.cookingStyle || "Takeout",
-                mealFrequency: userData.mealFrequency || "3 meals per day",
-                avoidFoods: userData.avoidFoods || "Mention Foods to be strictly avoided",
+                age: userData?.age || 24, // Default value as a fallback
+                weight: userData?.weight || 72,
+                height: userData?.height || 160,
+                gender: userData?.gender || "Male",
+                dietaryRestrictions: userData?.dietaryRestrictions || "Vegetarian",
+                preferredTimeSpan: userData?.preferredTimeSpan || 7,
+                healthIssues: userData?.healthIssues || "none",
+                fitnessGoal: userData?.fitnessGoal || "Weight Loss",
+                activityLevel: userData?.activityLevel || "Light Exercise",
+                lifestyle: userData?.lifestyle || "Non-smoker",
+                country: userData?.country || "Pakistan",
+                region: userData?.region || "Peshawar",
+                mealType: userData?.mealType || "Balanced",
+                preferredCuisine: userData?.preferredCuisine || "Pakistani",
+                cookingStyle: userData?.cookingStyle || "Takeout",
+                mealFrequency: userData?.mealFrequency || "3 meals per day",
+                avoidFoods: userData?.avoidFoods || "Mention Foods to be strictly avoided",
             };
 
             console.log("✅ Merged options:", mergedOptions);
@@ -397,7 +397,8 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
 
     const calculateBMI = ({ weight, height }: BMICalculation): string => {
         // Convert height from cm to meters
-        height /= 100;
+        height = height ? height / 100 : 0;
+        weight = weight || 0;
 
         // Calculate BMI
         const bmi = weight / (height ** 2);
@@ -490,7 +491,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                                 />
                             </div>
                             <h1 className="text-2xl md:text-3xl font-bold text-primary text-green-500">
-                                Personalized Diet Plan <span className="text-sm">( {userData.user.fitnessGoal || ""} )</span>
+                                Personalized Diet Plan <span className="text-sm">( {userData?.user?.fitnessGoal || ""} )</span>
                             </h1>
 
                         </CardContent>
@@ -519,7 +520,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                                             : "border-green-300 text-green-600"}
                                     `}
                             >
-                                BMI: {calculateBMI({ weight: userData?.user?.weight, height: userData?.user?.height })}
+                                BMI: {calculateBMI({ weight: userData?.user?.weight || 0, height: userData?.user?.height || 0 })}
                             </span>
 
                         </CardContent>
