@@ -23,114 +23,132 @@ export type DietPlan = {
     all_ingredients?: string[];
 };
 
-export async function generateDietPlan(userOptions: UserOptions): Promise<DietPlan | { error: string }> {
+const MODELS = [
+    "deepseek/deepseek-r1-distill-llama-70b:free",
+    "deepseek/deepseek-r1:free",
+];
+
+export async function generateDietPlan(userOptions: UserOptions): Promise<any> {
     const apiKey = process.env.OPENROUTER_API_KEY;
-    console.log("Diet PLan action user data: ",userOptions)
+    console.log("Diet Plan action user data:", userOptions);
+
     if (!apiKey) {
         console.error("❌ Server config error - OPENROUTER_API_KEY missing");
         return { error: "Server configuration error. Please contact support." };
     }
 
-    const prompt = `
-    Generate a structured **${userOptions.preferredTimeSpan}-day personalized diet plan** in **strict JSON format**.
-    
-    Respond only with valid JSON. Do NOT include any explanations, reasoning, comments, or markdown formatting.
-    
-    User Profile:
-    - Age: ${userOptions.age}
-    - Weight: ${userOptions.weight} kg
-    - Height: ${userOptions.height} cm
-    - Gender: ${userOptions.gender}
-    - Dietary Restrictions: ${userOptions.dietaryRestrictions}
-    - Health Issues: ${userOptions.healthIssues}
-    - Fitness Goal: ${userOptions.fitnessGoal}
-    - Activity Level:${userOptions.activityLevel}
-    - Life Style: ${userOptions.lifestyle}
-    - Country: ${userOptions.country}
-    - Region: ${userOptions.region}
-    - Meal Type: ${userOptions.mealType}
-    - Preferred Cuisine: ${userOptions.preferredCuisine}
-    - Cooking Style: ${userOptions.cookingStyle}
-    - Meal Frequency: ${userOptions.mealFrequency}
-    
-    **IMPORTANT:** Your response MUST be a **valid JSON object** and follow this format:
+    const strictPrompt = `
+    Generate a ${userOptions.preferredTimeSpan}-day personalized diet plan in STRICT JSON FORMAT.
+    Follow EXACTLY this structure:
     
     {
-      "calories_per_day": 2500,
-      "macronutrient_distribution": {
-        "protein": "150g",
-        "carbohydrates": "300g",
-        "fats": "80g"
-      },
-      "daily_plan": [
-        {
-          "day": 1,
-          "breakfast": [{ "meal": "Meal Name", "ingredients": ["Ing1", "Ing2"] }],
-          "lunch": [{ "meal": "Meal Name", "ingredients": ["Ing1", "Ing2"] }],
-          "snacks": [{ "meal": "Snack Name", "ingredients": ["Ing1", "Ing2"] }],
-          "dinner": [{ "meal": "Meal Name", "ingredients": ["Ing1", "Ing2"] }]
-        }
-        // Continue for ${userOptions.preferredTimeSpan - 1} more days...
-      ],
-      "alternatives": [
-        { "original": "Food", "alternative": ["Sub1", "Sub2"] }
-      ],
-      "foods_to_avoid": ["Food1", "Food2"],
-      "instructions": ["Instruction1", "Instruction2"],
-      "all_ingredients": ["Ing1", "Ing2", "Ing3"]
+        "calories_per_day": number,
+        "macronutrient_distribution": {
+            "protein": "Xg",
+            "carbohydrates": "Yg",
+            "fats": "Zg"
+        },
+        "daily_plan": [{
+            "day": number,
+            "breakfast": [{ "meal": string, "ingredients": string[] }],
+            "lunch": [{ "meal": string, "ingredients": string[] }],
+            "snacks": [{ "meal": string, "ingredients": string[] }],
+            "dinner": [{ "meal": string, "ingredients": string[] }]
+        }],
+        "alternatives": [{ "original": string, "alternatives": string[] }],
+        "foods_to_avoid": string[],
+        "instructions": string[],
+        "all_ingredients": string[]
     }
-    
-    Rules:
-    1. Only return JSON. No additional text.
-    2. Do NOT include explanations, reasoning, or markdown formatting, give only the final output you generate.
-    3. Ensure the JSON is valid and follows the exact format above.
-    4. Ensure complete response don't leave in the middle give the complete structure
-    `;
 
-    try {
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json",
-                // "HTTP-Referer": `${process.env.NEXT_PUBLIC_SITE_URL}`,
-            },
-            body: JSON.stringify({
-                model: "deepseek/deepseek-r1:free",
-                messages: [{
-                    role: "user",
-                    content: prompt
-                }],
-                // temperature: 0.3,
-                response_format: { type: "json_object" } // **Forcing JSON response**
-            }),
-        });
+    User Profile:
+    - Age: ${userOptions.age}
+    - Weight: ${userOptions.weight}kg
+    - Height: ${userOptions.height}cm
+    - Gender: ${userOptions.gender}
+    - Dietary restrictions: ${userOptions.dietaryRestrictions}
+    - Fitness goal: ${userOptions.fitnessGoal}
+    - Meal frequency: ${userOptions.mealFrequency}x/day
+    - Cuisine: ${userOptions.preferredCuisine}
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`API request failed (${response.status}): ${errorBody}`);
-        }
+    RULES:
+    1. STRICT JSON ONLY - NO MARKDOWN, NO EXTRA TEXT
+    2. Validate JSON syntax before responding
+    3. Include ALL required fields
+    4. Format numbers as strings with units (e.g., "150g")
+    5. Generate COMPLETE JSON - no truncated responses
+    6. Ensure ingredients match the user's region: ${userOptions.region}, ${userOptions.country}
+    `.replace(/^\s+/gm, "");
 
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-
-        if (!content) {
-            throw new Error("Empty response The Servier is busy try after sometime...");
-        }
-
+    for (const model of MODELS) {
         try {
-            const parsedData: DietPlan = JSON.parse(content);
-            if (!parsedData.daily_plan || !parsedData.calories_per_day) {
-                throw new Error("Invalid diet plan structure received");
-            }
-            return parsedData;
-        } catch (error) {
-            console.error("Invalid JSON content:", content);
-            throw new Error("Failed to parse JSON response from API.");
-        }
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "YOUR_SITE_URL",
+                    "X-Title": "Diet Planner"
+                },
+                body: JSON.stringify({
+                    model,
+                    messages: [{ role: "user", content: strictPrompt }],
+                    response_format: { type: "json_object" },
+                    temperature: 0.3,
+                    max_tokens: 4000 // Ensure enough tokens for complete response
+                }),
+            });
 
-    } catch (error: any) {
-        console.error("Error:", error);
-        return { error: error.message || "Failed to generate diet plan" };
+            const rawResponse = await response.text();
+
+            if (!response.ok) {
+                console.error(`API Error (${model}):`, response.status, rawResponse);
+                continue;
+            }
+
+            try {
+                const apiResponse = JSON.parse(rawResponse);
+                const content = apiResponse.choices[0]?.message?.content;
+                
+                if (!content) {
+                    console.error("No content in response from", model);
+                    continue;
+                }
+
+                // Enhanced JSON cleaning
+                const cleanedContent = content
+                    .replace(/```json/g, '')
+                    .replace(/```/g, '')
+                    .replace(/(\r\n|\n|\r)/gm, "") // Remove newlines
+                    .replace(/\s+/g, " ") // Collapse whitespace
+                    .trim();
+
+                // Validate JSON structure before parsing
+                if (!cleanedContent.startsWith("{") || !cleanedContent.endsWith("}")) {
+                    console.error("Invalid JSON boundaries in response");
+                    continue;
+                }
+
+                const dietPlan = JSON.parse(cleanedContent);
+                
+                // Validate required fields
+                if (!dietPlan.daily_plan || !dietPlan.macronutrient_distribution) {
+                    console.error("Missing required fields in response");
+                    continue;
+                }
+
+                console.log("✅ Cleaned Diet Plan:", JSON.stringify(dietPlan, null, 2));
+                return dietPlan;
+
+            } catch (parseError) {
+                console.error("JSON Parsing Error:", parseError);
+                continue;
+            }
+
+        } catch (error) {
+            console.error(`Error with model ${model}:`, error);
+        }
     }
+
+    return { error: "All model attempts failed. Please try again later." };
 }
