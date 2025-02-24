@@ -16,7 +16,7 @@ const Banner = () => {
                         whileInView={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
                         viewport={{ once: true }}
-                        src="/img/About_img.png" alt="banner"
+                        src="/img/about_img.png" alt="banner"
                         className='w-full max-w-[500px]  sm:pr-0  object-cover rounded-xl ' />
                 </div>
 
