@@ -3,103 +3,76 @@ import { getLoggedInUser } from "../../../lib/actions/users.action";
 import { MongoClient } from "mongodb";
 
 const client = new MongoClient(process.env.MONGODB_URI!);
-let dbConnected = false;
 
 async function getDietPlansCollection() {
-    if (!dbConnected) {
-        await client.connect();
-        dbConnected = true;
-    }
+    await client.connect();
     return client.db().collection("dietPlans");
 }
 
-// ✅ GET: Fetch user's diet plan (single plan per user)
+// Enhanced GET endpoint
 export async function GET() {
     try {
-        const loggedInUser = await getLoggedInUser();
-        if (!loggedInUser) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const user = await getLoggedInUser();
+        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const dietPlansCollection = await getDietPlansCollection();
-        const dietPlan = await dietPlansCollection.findOne({
-            userId: loggedInUser.$id // Only fetch plans for the logged-in user
-        });
+        const collection = await getDietPlansCollection();
+        const plan = await collection.findOne({ userId: user.$id });
 
-        if (!dietPlan) {
-            return NextResponse.json({ error: "No diet plan found" }, { status: 404 });
-        }
-
-        return NextResponse.json({
-            success: true,
-            dietPlan // Return single plan
-        });
+        return plan 
+            ? NextResponse.json({ dietPlan: plan })
+            : NextResponse.json({ error: "No plan found" }, { status: 404 });
 
     } catch (error) {
-        console.error("❌ Error fetching diet plan:", error);
+        console.error("GET Error:", error);
         return NextResponse.json(
-            { error: "Failed to fetch diet plan" },
+            { error: "Failed to fetch plan" },
             { status: 500 }
         );
     }
 }
 
-// ✅ POST: Create/Update user's diet plan
+// Enhanced POST endpoint
 export async function POST(req: Request) {
     try {
-        const loggedInUser = await getLoggedInUser();
-        if (!loggedInUser) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const user = await getLoggedInUser();
+        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const requestBody = await req.json();
-        if (!requestBody || Object.keys(requestBody).length === 0) {
+        // Validate request body
+        let body;
+        try {
+            body = await req.json();
+        } catch (error) {
             return NextResponse.json(
-                { error: "Invalid diet plan data" },
+                { error: "Invalid JSON body" },
                 { status: 400 }
             );
         }
 
-        const dietPlansCollection = await getDietPlansCollection();
-        const userId = loggedInUser.$id;
-
-        // Upsert operation with proper error handling
-        const updateResult = await dietPlansCollection.updateOne(
-            { userId },
+        const collection = await getDietPlansCollection();
+        const result = await collection.updateOne(
+            { userId: user.$id },
             {
                 $set: {
-                    ...requestBody,
-                    userId,
-                    createdAt: new Date(),
-                    updatedAt: new Date()
+                    ...body,
+                    userId: user.$id,
+                    updatedAt: new Date(),
+                    createdAt: new Date()
                 }
             },
             { upsert: true }
         );
 
-        if (!updateResult.acknowledged) {
+        if (!result.acknowledged) {
             throw new Error("Database operation failed");
         }
 
-        // Fetch the updated/created document
-        const dietPlan = await dietPlansCollection.findOne({ userId });
-
-        if (!dietPlan) {
-            throw new Error("Failed to retrieve saved diet plan");
-        }
-
-        return NextResponse.json({
-            success: true,
-            dietPlan
-        });
+        const savedPlan = await collection.findOne({ userId: user.$id });
+        return NextResponse.json({ dietPlan: savedPlan });
 
     } catch (error) {
-        console.error("❌ Error storing diet plan:", error);
+        console.error("POST Error:", error);
         return NextResponse.json(
-            { 
-                success: false,
-                error: error instanceof Error ? error.message : "Unknown error occurred"
-            },
+            { error: error instanceof Error ? error.message : "Database error" },
             { status: 500 }
         );
     }
