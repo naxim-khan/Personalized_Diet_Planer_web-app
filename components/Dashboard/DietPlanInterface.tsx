@@ -5,11 +5,17 @@ import { DietPlanTypes } from "../../types/index"
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Button } from "../../components/ui/button";
+import { toPng } from 'html-to-image';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "../../components/ui/alert";
 import { Badge } from "../../components/ui/badge";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { UserOptions } from "../../types/dietPlan";
+import { Egg, Utensils, Cookie, Drumstick } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import DietPlanPDF from '../../components/DietPlanPDF';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 
 export default function DietPlanInterface({ generatePlan }: { generatePlan: (options: UserOptions) => Promise<DietPlan | { error: string }> }) {
     const [dietPlan, setDietPlan] = useState<DietPlanTypes | null>(null);
@@ -22,6 +28,11 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
 
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
     const [localPlan, setLocalPlan] = useState<DietPlanTypes | null>(null);
+
+    // PDF Generate Logic
+    const chartRef = useRef(null);
+    const [pdfReady, setPdfReady] = useState(false);
+    const [chartImage, setChartImage] = useState<string | null>(null);
 
     // Retry Logic
     const [retryCount, setRetryCount] = useState(0);
@@ -171,7 +182,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
     // save to cloud
     const handleSaveToCloud = async () => {
         if (!localPlan) return;
-        
+
         setSaveStatus('saving');
         try {
             const response = await fetch('/api/dietplans', {
@@ -344,64 +355,15 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
     // };
 
     const generatePDF = async () => {
-        if (!printRef.current) return;
-
-        const pdf = new jsPDF("p", "mm", "a4"); // A4 size PDF in portrait mode
-        const pageWidth = 210;  // A4 width in mm
-        const pageHeight = 297; // A4 height in mm
-        const margin = 10; // Margin for better spacing
-
         try {
-            // Convert the full content into a canvas
-            const canvas = await html2canvas(printRef.current, {
-                // scale: 3, // High resolution
-                useCORS: true,
-            });
-
-            const imgData = canvas.toDataURL("image/png");
-
-            // Get image dimensions
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-
-            // Convert pixels to mm
-            const imgRatio = imgWidth / imgHeight;
-            const pdfWidth = pageWidth - margin * 2; // Full width minus margins
-            const pdfHeight = pdfWidth / imgRatio; // Auto scale height
-
-            let position = margin; // Start position for the first image
-
-            // If content fits in one page
-            if (pdfHeight <= pageHeight - margin * 2) {
-                pdf.addImage(imgData, "PNG", margin, position, pdfWidth, pdfHeight);
-            } else {
-                // If content is long, split into multiple pages
-                let remainingHeight = imgHeight;
-                let yPosition = 0;
-
-                while (remainingHeight > 0) {
-                    const canvasSection = document.createElement("canvas");
-                    canvasSection.width = canvas.width;
-                    canvasSection.height = (pageHeight / pdfWidth) * canvas.width; // Same ratio
-
-                    const ctx = canvasSection.getContext("2d");
-                    if (ctx) {
-                        ctx.drawImage(canvas, 0, yPosition, canvas.width, canvasSection.height, 0, 0, canvas.width, canvasSection.height);
-                    }
-
-                    const sectionData = canvasSection.toDataURL("image/png");
-
-                    if (yPosition > 0) pdf.addPage(); // Add a new page after the first one
-                    pdf.addImage(sectionData, "PNG", margin, margin, pdfWidth, pdfHeight);
-
-                    yPosition += canvasSection.height; // Move down
-                    remainingHeight -= canvasSection.height; // Decrease remaining height
-                }
+            // Capture chart as image
+            if (chartRef.current) {
+                const chartUrl = await toPng(chartRef.current);
+                setChartImage(chartUrl);
             }
-
-            pdf.save("Diet_Plan.pdf");
+            setPdfReady(true);
         } catch (error) {
-            console.error("Error generating PDF:", error);
+            console.error('Error generating PDF:', error);
         }
     };
 
@@ -424,14 +386,14 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
 
     return (
         <div className="p-4 md:p-6 w-full bg-gray-50 rounded-2xl border-2 mx-auto space-y-6">
-            {/* Delete Confirmation Modal */}
+
             {/* Status Alert */}
             {saveStatus === 'saving' && (
                 <Alert className="mb-4">
                     ⏳ Saving your plan to cloud storage...
                 </Alert>
             )}
-            
+
             {saveStatus === 'error' && (
                 <Alert variant="destructive" className="mb-4">
                     ❌ Failed to save to cloud - using local storage
@@ -442,7 +404,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
             {localPlan && (
                 <Alert className="mb-4">
                     ⚠️ Your plan is stored locally
-                    <Button 
+                    <Button
                         onClick={handleSaveToCloud}
                         className="ml-4"
                         size="sm"
@@ -451,30 +413,44 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                     </Button>
                 </Alert>
             )}
-            
+
+            {/* Delete Confirmation Modal */}
             {showDeleteConfirmation && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                    <Card className="bg-background animate-in zoom-in-95 bg-green-100 border-red-700">
-                        <CardHeader>
-                            <CardTitle className="text-destructive">Confirm Deletion</CardTitle>
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+                    <Card className=" bg-white border-gray-200  animate-in fade-in-90 zoom-in-95 w-full max-w-md border-0 shadow-xl">
+                        <CardHeader className="pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-destructive/10 p-2 rounded-full">
+                                    <TriangleAlert className="w-5 h-5 text-destructive text-red-500" />
+                                </div>
+                                <CardTitle className="text-lg font-semibold text-foreground text-red-500">
+                                    Delete Diet Plan
+                                </CardTitle>
+                            </div>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p>Are you sure you want to delete this diet plan?</p>
-                            <div className="flex gap-3 justify-end">
-                                <Button
-                                    className=" bg-green-600 text-white"
-                                    variant="outline"
-                                    onClick={() => setShowDeleteConfirmation(false)}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    className="bg bg-red-200"
-                                    variant="destructive"
-                                    onClick={handleConfirmDelete}
-                                >
-                                    Delete Plan
-                                </Button>
+                        <CardContent>
+                            <div className="space-y-6">
+                                <p className="text-muted-foreground">
+                                    This will permanently delete the diet plan and all associated data.
+                                    This action cannot be undone.
+                                </p>
+                                <div className="flex gap-3 justify-end">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowDeleteConfirmation(false)}
+                                        className="px-5 hover:bg-accent/50 text-green-600 bg-green-100"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={handleConfirmDelete}
+                                        className="px-5 bg-destructive hover:bg-destructive/90 text-red-500 bg-red-100"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Plan
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -512,7 +488,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                                     Crafting your meal plan...
                                 </p>
                                 <p className="text-sm text-gray-500 mt-2">
-                                    This usually takes 10-15 seconds
+                                    This usually takes 2-5 minutes
                                 </p>
                             </div>
                         </div>
@@ -549,15 +525,51 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                     </div>
                 </Button>
 
+                
                 {dietPlan && (
-                    <Button
-                        onClick={generatePDF}
-                        variant="outline"
-                        size="lg"
-                        className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-gradient-green text-white rounded-tl-full rounded-br-full rounded-tr-none rounded-bl-none hover:scale-105 transition-transform"
-                    >
-                        Download PDF
-                    </Button>
+                    <div className="relative">
+                        {!pdfReady ? (
+                            <Button
+                                onClick={async () => {
+                                    try {
+                                        const chartUrl = await toPng(chartRef.current!);
+                                        setChartImage(chartUrl);
+                                        setPdfReady(true);
+                                    } catch (error) {
+                                        console.error('Error generating PDF:', error);
+                                    }
+                                }}
+                                variant="outline"
+                                size="lg"
+                                className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-gradient-green text-white rounded-tl-full rounded-br-full rounded-tr-none rounded-bl-none hover:scale-105 transition-transform"
+                            >
+                                Download PDF
+                            </Button>
+                        ) : (
+                            <PDFDownloadLink
+                                document={
+                                    <DietPlanPDF
+                                        userData={userData}
+                                        dietPlan={dietPlan}
+                                        chartImage={chartImage!}
+                                    />
+                                }
+                                fileName="diet-plan.pdf"
+                                className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-gradient-green text-white rounded-tl-full rounded-br-full rounded-tr-none rounded-bl-none hover:scale-105 transition-transform"
+                            >
+                                {({ loading }) => (
+                                    <Button
+                                        variant="outline"
+                                        size="lg"
+                                        disabled={loading}
+                                        className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-gradient-green text-white rounded-tl-full rounded-br-full rounded-tr-none rounded-bl-none hover:scale-105 transition-transform"
+                                    >
+                                        {loading ? 'Generating...' : 'Download Now'}
+                                    </Button>
+                                )}
+                            </PDFDownloadLink>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -570,112 +582,172 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
             )}
 
             {dietPlan && (
-                <div ref={printRef} className="space-y-0.5">
+                <div ref={printRef} className="space-y-4">
                     {/* Header */}
-                    <Card className="bg-background rounded-none border-0 border-b-2 shadow-none bg-gray-50">
-                        <CardContent className="p-4 md:p-6 flex flex-col md:flex-row items-center justify-between">
-                            <div className="border px-4 rounded-tr-full rounded-bl-full border-green-600 flex items-center justify-center">
-                                <img
-                                    src="/img/LOGO.png"
-                                    alt="Site Logo"
-                                    className="h-12 md:h-16 mb-4 md:mb-0"
-                                />
-                            </div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-primary text-green-500">
-                                Personalized Diet Plan <span className="text-sm">( {userData?.user?.fitnessGoal || ""} )</span>
-                            </h1>
+                    <Card className="bg-background rounded-none border-0 shadow-sm">
+                        <CardContent className="px-4 py-3 md:px-6 md:py-4">
+                            <div className="flex items-center gap-4 md:gap-6">
+                                {/* Logo with subtle accent */}
+                                <div className="flex items-center">
+                                    <img
+                                        src="/img/LOGO.png"
+                                        alt="Site Logo"
+                                        className="h-10 md:h-12 w-auto"
+                                    />
+                                    <div className="ml-2 h-8 w-px bg-emerald-200/80 hidden md:block"></div>
+                                </div>
 
+                                {/* Title with gradient text */}
+                                <div className="flex-1">
+                                    <h1 className="text-xl md:text-2xl font-semibold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
+                                        Personalized Nutrition Plan
+                                        <span className="block md:inline-block text-sm md:text-base font-normal text-emerald-600/90 mt-1 md:mt-0 md:ml-3">
+                                            {userData?.user?.fitnessGoal && `(Optimized for ${userData.user.fitnessGoal})`}
+                                        </span>
+                                    </h1>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="border-destructive rounded-none border-0 border-b-2 border-r-2 shadow-none">
-                        <CardHeader>
-                            <CardTitle className="text-lg text-destructive text-green-600">
-                                {userData?.user?.firstName + " " + userData?.user?.lastName}
-                                <span className="text-[0.7rem] border px-[5px] rounded-lg border-green-500 ml-1">{userData?.user?.country}</span>
+                    {/* User Details */}
+                    <Card className="border-0 shadow-none">
+                        <CardHeader className="pb-3 px-4">
+                            <CardTitle className="text-base font-medium text-gray-900 flex items-center gap-2">
+                                <span>{userData?.user?.firstName} {userData?.user?.lastName}</span>
+                                <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                                    {userData?.user?.country}
+                                </span>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-wrap gap-2">
-                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">Activity Level: {userData?.user?.activityLevel}</span>
-                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">CookingStyle: {userData?.user?.cookingStyle}</span>
-                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">DietaryRestriction: {userData?.user?.dietaryRestrictions}</span>
-                            <span className="text-sm border border-green-300 px-2 rounded-lg text-green-600">CuisineStyle: {userData?.user?.preferredCuisine}</span>
-                            <span
-                                className={`
-                                     text-sm border px-2 rounded-lg 
-                                    ${parseFloat(calculateBMI({ weight: userData?.user?.weight, height: userData?.user?.height })) < 18.5 ||
-                                        parseFloat(calculateBMI({ weight: userData?.user?.weight, height: userData?.user?.height })) >= 25
-                                        ? "border-red-300 text-red-600"
-                                        : parseFloat(calculateBMI({ weight: userData?.user?.weight, height: userData?.user?.height })) >= 23
-                                            ? "border-yellow-300 text-yellow-600"
-                                            : "border-green-300 text-green-600"}
-                                    `}
-                            >
-                                BMI: {calculateBMI({ weight: userData?.user?.weight || 0, height: userData?.user?.height || 0 })}
-                            </span>
 
+                        <CardContent className="px-4 pt-0 grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="text-sm text-gray-600">
+                                <p className="font-medium">Activity Level</p>
+                                <p className="text-emerald-700">{userData?.user?.activityLevel}</p>
+                            </div>
+
+                            <div className="text-sm text-gray-600">
+                                <p className="font-medium">Cooking Style</p>
+                                <p className="text-emerald-700">{userData?.user?.cookingStyle}</p>
+                            </div>
+
+                            <div className="text-sm text-gray-600">
+                                <p className="font-medium">Dietary Restrictions</p>
+                                <p className="text-emerald-700">{userData?.user?.dietaryRestrictions}</p>
+                            </div>
+
+                            <div className="text-sm text-gray-600">
+                                <p className="font-medium">Preferred Cuisine</p>
+                                <p className="text-emerald-700">{userData?.user?.preferredCuisine}</p>
+                            </div>
+
+                            {userData?.user?.weight && userData?.user?.height && (
+                                <div className="text-sm text-gray-600">
+                                    <p className="font-medium">BMI</p>
+                                    <p className={
+                                        (() => {
+                                            const bmi = parseFloat(calculateBMI({
+                                                weight: userData.user.weight,
+                                                height: userData.user.height
+                                            }));
+                                            if (bmi < 18.5) return "text-red-600";
+                                            if (bmi >= 25) return "text-red-600";
+                                            if (bmi >= 23) return "text-amber-600";
+                                            return "text-emerald-600";
+                                        })()
+                                    }>
+                                        {calculateBMI({
+                                            weight: userData.user.weight || 0,
+                                            height: userData.user.height || 0
+                                        })}
+                                    </p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
                     {/* Overview Section */}
-                    <div className="grid gap-4 md:grid-cols-2 rounded-none border-0 border-b-2 bg-gray-50">
-                        <Card className=" border-none shadow-none rounded-0 ">
-                            <CardHeader>
-                                <CardTitle className="text-lg text-green-800">Daily Nutrition</CardTitle>
-                            </CardHeader>
-                            <CardContent className="">
-                                <div className="flex justify-between items-center border-b-2">
-                                    <span className="font-semibold  text-green-700">Calories</span>
-                                    <Badge variant="outline" className="text-lg mb-2  text-green-700 border-green-700">
-                                        {dietPlan.calories_per_day}
+                    <div className="grid gap-4 md:gap-5 lg:grid-cols-2 rounded-lg bg-white p-4 shadow-xs">
+                        {/* Nutrition Card */}
+                        <Card className="border-0 shadow-none bg-emerald-50/20 p-3 rounded-lg">
+                            <CardHeader className="pb-2 px-0">
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="text-lg font-semibold text-emerald-800">
+                                        Nutrition Overview
+                                    </CardTitle>
+                                    <Badge
+                                        variant="outline"
+                                        className="text-base py-0.5 px-2.5 border-emerald-200 text-emerald-700 bg-white"
+                                    >
+                                        {dietPlan.calories_per_day} kcal
                                     </Badge>
                                 </div>
+                                <div className="border-b border-emerald-100 mt-2"></div>
+                            </CardHeader>
 
-                                <ResponsiveContainer width="100%" height={250} className={'pdf-chart'}>
-                                    <PieChart>
-                                        <Pie
-                                            data={getMacronutrientData()}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={50}
-                                            outerRadius={80}
-                                            fill="#8884d8"
-                                            paddingAngle={5}
-                                            dataKey="value"
-                                            label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                                        >
-                                            {getMacronutrientData().map((entry, index) => (
-                                                <Cell
-                                                    key={`cell-${index}`}
-                                                    fill={COLORS[index % COLORS.length]}
-                                                />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip
-                                            formatter={(value: number) => [`${Math.round(value)} kcal`, '']}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className="w-full flex items-center justify-center">
+                            <CardContent className="p-0" ref={chartRef}>
+                                <div className="h-[180px] lg:h-[200px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={getMacronutrientData()}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={45}
+                                                outerRadius={75}
+                                                paddingAngle={1}
+                                                dataKey="value"
+                                                label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                                            >
+                                                {getMacronutrientData().map((entry, index) => (
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={COLORS[index % COLORS.length]}
+                                                    />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                formatter={(value: number) => [`${Math.round(value)} kcal`, '']}
+                                                contentStyle={{
+                                                    borderRadius: '10px',
+                                                    border: '1px solid #d1fae5',
+                                                    boxShadow: '0 2px 4px -1px rgb(0 0 0 / 0.05)'
+                                                }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                <div className="mt-3 flex flex-wrap gap-2 justify-center">
                                     <LegendBadges />
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {(dietPlan.instructions?.length ?? 0) > 0 && (
-                            <Card className="border-none shadow-none flex flex-col  justify-center">
-                                <CardHeader>
-                                    <CardTitle className="text-[1.125rem] text-green-800">Key Instructions</CardTitle>
+                        {/* Guidelines Card */}
+                        {dietPlan.instructions && dietPlan.instructions.length > 0 && (
+                            <Card className="border-0 shadow-none bg-white p-3 rounded-lg">
+                                <CardHeader className="pb-2 px-0">
+                                    <CardTitle className="text-lg font-semibold text-emerald-800">
+                                        Key Guidelines
+                                    </CardTitle>
+                                    <div className="border-b border-emerald-100 mt-2"></div>
                                 </CardHeader>
-                                <CardContent>
-                                    <ul className="space-y-1">
+
+                                <CardContent className="p-0">
+                                    <ul className="space-y-2">
                                         {dietPlan.instructions?.map((instruction, index) => (
                                             <li
                                                 key={index}
-                                                className="flex items-start gap-2 text-sm"
+                                                className="flex items-start gap-2 p-2 rounded-md bg-emerald-50/30 hover:bg-emerald-50/50 transition-colors"
                                             >
-                                                <span className=" text-green-500">•</span>
-                                                <span className="flex-1">{instruction}</span>
+                                                <div className="shrink-0 w-5 h-5 bg-emerald-500/10 text-emerald-700 text-sm rounded-full flex items-center justify-center">
+                                                    {index + 1}
+                                                </div>
+                                                <p className="text-sm leading-snug text-gray-700">
+                                                    {instruction}
+                                                </p>
                                             </li>
                                         ))}
                                     </ul>
@@ -685,115 +757,114 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                     </div>
 
                     {/* Meal Plan Table */}
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="grid grid-cols-1 gap-8">
                         {dietPlan.daily_plan?.map((dayPlan, index) => (
-                            <Card key={dayPlan.day} className="w-full bg-gray-50 rounded-0 border-none border-b-2">
-                                <CardHeader>
-                                    <CardTitle className="text-lg">Day : {index + 1}</CardTitle>
+                            <Card key={dayPlan.day} className="w-full bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out">
+                                {/* Day Header with Progress Psychology */}
+                                <CardHeader className="px-6 py-2 bg-emerald-50/70 rounded-t-xl border-b border-emerald-100">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
+                                                <CardTitle className="text-lg font-bold text-emerald-800">
+                                                    Day {index + 1}
+                                                </CardTitle>
+                                            </div>
+                                            <span className="text-sm text-emerald-600/80">
+                                                {index + 1} of {dietPlan.daily_plan.length} days
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-emerald-600">
+                                            <span className="text-sm">{dietPlan.calories_per_day}</span>
+                                            <span className="text-xs">kcal/day</span>
+                                        </div>
+                                    </div>
                                 </CardHeader>
-                                <CardContent className="space-y-4 grid  md:grid-cols-2 sm:grid-cols-1  gap-4">
-                                    {/* Breakfast Section */}
-                                    <div className="space-y-2 border-b-2 ">
-                                        <h3 className="font-semibold">
-                                            Breakfast <span className="text-xs text-gray-700">({dayPlan.breakfast.length} options)</span>
-                                        </h3>
-                                        {dayPlan.breakfast.map((meal, i) => (
-                                            <div key={i} className="text-sm pl-4 border-l-4 border-primary">
-                                                <div className="font-medium">{meal.meal}</div>
-                                                <p className="text-xs mt-1 text-muted-foreground">
-                                                    {meal.ingredients.join(", ")}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
 
-                                    {/* Lunch Section */}
-                                    <div className="space-y-2 border-b-2 ">
-                                        <h3 className="font-semibold">
-                                            Lunch <span className="text-xs text-gray-700" >({dayPlan.lunch.length} options)</span>
-                                        </h3>
-                                        {dayPlan.lunch.map((meal, i) => (
-                                            <div key={i} className="text-sm pl-4 border-l-4 border-secondary py-2">
-                                                <div className="font-medium">{i + 1}: {meal.meal}</div>
-                                                <p className="text-xs mt-1 text-muted-foreground ">
-                                                    {meal.ingredients.join(", ")}
-                                                </p>
+                                <CardContent className="p-6 grid lg:grid-cols-2 gap-6">
+                                    {/* Meal Sections with Color Coding */}
+                                    {[['breakfast', <Egg className="w-5 h-5 text-yellow-500" />, 'Morning Energy', 'border-amber-200 bg-amber-50'],
+                                    ['lunch', <Utensils className="w-5 h-5 text-blue-500" />, 'Midday Fuel', 'border-lime-200 bg-lime-50'],
+                                    ['snacks', <Cookie className="w-5 h-5 text-orange-500" />, 'Sustained Energy', 'border-emerald-200 bg-emerald-50'],
+                                    ['dinner', <Drumstick className="w-5 h-5 text-red-500" />, 'Evening Recovery', 'border-teal-200 bg-teal-50']].map(([mealType, icon, title, colors]) => (
+                                        <div key={`${mealType}`} className={`p-4 rounded-xl border ${colors} transition-colors hover:border-opacity-70`}>
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <span className="text-2xl">{icon}</span>
+                                                <h3 className="text-lg font-semibold text-gray-800">
+                                                    {title}
+                                                    <span className="ml-2 text-sm text-gray-500 font-normal">
+                                                        ({Array.isArray(dayPlan[mealType as keyof typeof dayPlan]) ? (dayPlan[mealType as keyof typeof dayPlan] as { meal: string; ingredients: string[] }[]).length : 0} options)
+                                                    </span>
+                                                </h3>
                                             </div>
-                                        ))}
-                                    </div>
 
-                                    {/* Snacks Section */}
-                                    <div className="space-y-2 border-b-2">
-                                        <h3 className="font-semibold">
-                                            Snacks <span className="text-xs text-gray-700" >({dayPlan.snacks.length} options)</span>
-                                        </h3>
-                                        {dayPlan.snacks.map((meal, i) => (
-                                            <div key={i} className="text-sm pl-4 border-l-4 border-accent py-2">
-                                                <div className="font-medium">{i + 1}: {meal.meal}</div>
-                                                <p className="text-xs mt-1 text-muted-foreground">
-                                                    {meal.ingredients.join(", ")}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
+                                            <div className="space-y-3">
+                                                {Array.isArray(dayPlan[mealType as keyof typeof dayPlan])
+                                                    ? (dayPlan[mealType as keyof typeof dayPlan] as { meal: string; ingredients: string[] }[]).map((meal, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className="group relative pl-4 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-4/5 before:bg-emerald-400 before:rounded-full before:opacity-50 before:transition-opacity hover:before:opacity-80"
+                                                        >
+                                                            <div className="font-medium text-gray-800 transition-colors group-hover:text-emerald-700">
+                                                                {meal.meal}
+                                                            </div>
+                                                            <p className="text-sm text-gray-600/90 mt-1 leading-relaxed">
+                                                                {meal.ingredients.join(", ")}
+                                                            </p>
+                                                        </div>
+                                                    ))
+                                                    : null /* Avoids calling .map() on a number */
+                                                }
 
-                                    {/* Dinner Section */}
-                                    <div className="space-y-2 border-b-2 ">
-                                        <h3 className="font-semibold">
-                                            Dinner <span className="text-xs text-gray-700">({dayPlan.dinner.length} options)</span>
-                                        </h3>
-                                        {dayPlan.dinner.map((meal, i) => (
-                                            <div key={i} className="text-sm pl-4 border-l-4 border-destructive py-2">
-                                                <div className="font-medium">{i + 1}: {meal.meal}</div>
-                                                <p className="text-xs mt-1 text-muted-foreground">
-                                                    {meal.ingredients.join(", ")}
-                                                </p>
                                             </div>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    ))}
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
 
                     {/* Additional Sections */}
-                    <div className="grid gap-0 md:grid-cols-2 bg-gray-50 py-4 rounded-xl">
-                        {(dietPlan.foods_to_avoid?.length ?? 0) > 0 && (
-                            <Card className="border-destructive rounded-none border-0 border-b-2 border-r-2 shadow-none">
-                                <CardHeader>
-                                    <CardTitle className="text-lg text-destructive text-red-500">
-                                        Foods to Avoid:
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex flex-wrap gap-2">
-                                    {dietPlan.foods_to_avoid?.map((food, index) => (
-                                        <Badge key={index} variant="destructive" className=" bg-red-50 border-red-600 text-red-600">
-                                            {food}
-                                        </Badge>
-                                    ))}
-                                </CardContent>
-                            </Card>
+                    <div className="grid gap-px md:grid-cols-2 bg-gray-100/50 rounded-lg overflow-hidden border border-gray-200">
+                        {/* Foods to Avoid */}
+                        {(dietPlan.foods_to_avoid ?? []).length > 0 && (
+                            <div className="bg-white p-4">
+                                <div className="flex flex-col space-y-2">
+                                    <h3 className="text-sm font-semibold text-red-600 uppercase tracking-wide">
+                                        <span className="border-b-2 border-red-100 pb-1">Foods to Avoid</span>
+                                    </h3>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {dietPlan.foods_to_avoid?.map((food, index) => (
+                                            <span
+                                                key={index}
+                                                className="px-2 py-1 text-xs font-medium bg-red-50/60 text-red-700 rounded-md border border-red-200"
+                                            >
+                                                {food}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         )}
 
-                        {(dietPlan.all_ingredients?.length ?? 0) > 0 && (
-                            <Card className="shadow-none rounded-none border-0 border-b-2">
-                                <CardHeader>
-                                    <CardTitle className="text-lg text-green-700">
-                                        Ingredients List :
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex flex-wrap gap-2">
-                                    {dietPlan.all_ingredients?.map((ingredient, index) => (
-                                        <Badge
-                                            key={index}
-                                            variant="outline"
-                                            className="font-normal bg-green-100 border-green-500"
-                                        >
-                                            {ingredient}
-                                        </Badge>
-                                    ))}
-                                </CardContent>
-                            </Card>
+                        {/* Ingredients List */}
+                        {dietPlan.all_ingredients && dietPlan.all_ingredients.length > 0 && (
+                            <div className="bg-white p-4">
+                                <div className="flex flex-col space-y-2">
+                                    <h3 className="text-sm font-semibold text-emerald-600 uppercase tracking-wide">
+                                        <span className="border-b-2 border-emerald-100 pb-1">Ingredients Included in Plan</span>
+                                    </h3>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {dietPlan.all_ingredients.map((ingredient, index) => (
+                                            <span
+                                                key={index}
+                                                className="px-2 py-1 text-xs font-medium bg-emerald-50/60 text-emerald-700 rounded-md border border-emerald-200"
+                                            >
+                                                {ingredient}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>
