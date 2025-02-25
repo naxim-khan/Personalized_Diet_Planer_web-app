@@ -63,13 +63,16 @@ export async function generateDietPlan(userOptions: UserOptions): Promise<any> {
 
     User Profile:
     - Age: ${userOptions.age}
-    - Weight: ${userOptions.weight}kg
-    - Height: ${userOptions.height}cm
+    - Weight: ${userOptions.weight} kg
+    - Height: ${userOptions.height} cm
     - Gender: ${userOptions.gender}
-    - Dietary restrictions: ${userOptions.dietaryRestrictions}
-    - Fitness goal: ${userOptions.fitnessGoal}
-    - Meal frequency: ${userOptions.mealFrequency}x/day
-    - Cuisine: ${userOptions.preferredCuisine}
+    - Dietary Restrictions: ${userOptions.dietaryRestrictions}
+    - Health Issues: ${userOptions.healthIssues}
+    - Fitness Goal: ${userOptions.fitnessGoal}
+    - Activity Level:${userOptions.activityLevel}
+    - Meal Type: ${userOptions.mealType}
+    - Preferred Cuisine: ${userOptions.preferredCuisine}
+    - Cooking Style: ${userOptions.cookingStyle}
 
     RULES:
     1. STRICT JSON ONLY - NO MARKDOWN, NO EXTRA TEXT
