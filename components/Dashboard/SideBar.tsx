@@ -7,9 +7,13 @@ import { cn } from '../lib/utils';
 import { usePathname } from 'next/navigation';
 import Footer from './Footer';
 import { SiderbarProps } from '../../types/index';
+
 const SideBar = ({ user }: SiderbarProps) => {
     const pathname = usePathname();
     const [isExpanded, setIsExpanded] = useState(false);
+
+    // Function to remove trailing slash
+    const normalizePath = (path: string): string => path.replace(/\/$/, '');
 
     return (
         <section className={cn(
@@ -18,8 +22,7 @@ const SideBar = ({ user }: SiderbarProps) => {
         )}>
             <nav className='flex flex-col gap-4 h-full'>
                 <div
-                    // href={"/dashboard"}
-                    className=' cursor-pointer items-center gap-2 flex'
+                    className='cursor-pointer items-center gap-2 flex'
                     onClick={() => setIsExpanded(!isExpanded)}
                 >
                     <Image
@@ -39,13 +42,12 @@ const SideBar = ({ user }: SiderbarProps) => {
 
                 <div className='flex-1'>
                     {sidebarLinks.map((item) => {
-                        const isActive = pathname === item.route || pathname.startsWith(`${item.route}/dashboard`);
+                        const isActive = normalizePath(pathname) === normalizePath(item.route);
                         return (
                             <Link
                                 href={item.route}
                                 key={item.label}
-                                className={cn('flex gap-3  py-1 md:p-3 2xl:p-4 rounded-lg xl:justify-start transition-colors items-start justify-start', { 'bg-green-700': isActive })}
-                            // onClick={() => setIsExpanded(!isExpanded)}
+                                className={cn('flex gap-3  py-1 md:p-3 2xl:p-4 rounded-lg xl:justify-start transition-colors items-start justify-start', { 'bg-gradient-green': isActive })}
                             >
                                 <div className='relative size-6'>
                                     <Image

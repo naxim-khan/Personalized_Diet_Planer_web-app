@@ -19,6 +19,10 @@ import Footer from './Footer'
 
 const MobileNav = ({ user }: MobileNavProps) => {
     const pathname = usePathname();
+
+    // Function to remove trailing slash
+    const normalizePath = (path: string): string => path.replace(/\/$/, '');
+
     return (
         <section className='w-full max-w-[264px]'>
             <Sheet>
@@ -50,9 +54,9 @@ const MobileNav = ({ user }: MobileNavProps) => {
 
                     <div className='mobilenav-sheet'>
                         <SheetClose asChild>
-                            <nav className='flex h-full flex-col gap-6 pt-16 text-white'>
+                            <nav className='flex  flex-col gap-3 pt-16 text-white'>
                                 {sidebarLinks.map((item) => {
-                                    const isActive = pathname === item.route || pathname.startsWith(`${item.route}/dashboard`);
+                                    const isActive = normalizePath(pathname) === normalizePath(item.route);
                                     return (
                                         <SheetClose asChild key={item.route}>
                                             <Link href={item.route} className={cn('mobilenav-sheet_close w-full', { 'bg-gradient-green': isActive })}>

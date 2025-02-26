@@ -13,7 +13,7 @@ const Footer = ({ user, type = 'desktop', isExpanded }: FooterProps) => {
     }
 
     return (
-        <div className="footer-2">
+        <div className="footer-2 ">
             {(isExpanded && (type === 'mobile' || type === 'desktop')) && (
                 <div className={type === 'mobile' ? 'footer_name-mobile' : 'footer_name'}>
                     <p className="text-xl font-bold text-gray-700">
