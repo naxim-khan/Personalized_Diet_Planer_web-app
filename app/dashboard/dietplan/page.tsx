@@ -6,7 +6,7 @@ import HeaderBox from "../../../components/Dashboard/HeaderBox";
 export default function DietPlanPage() {
   return (
     <section
-      className='home rounded-tl-2xl border w-full h-screen'
+      className='home rounded-tl-2xl border border-gray-300 w-full h-screen mt-1'
       style={{
         backgroundColor: "#fafffb",
         backgroundImage: 'url("https://www.transparenttextures.com/patterns/blizzard.png")',
@@ -20,7 +20,7 @@ export default function DietPlanPage() {
             type="greeting"
             title="Generate Your"
             user={"Diet Plan"}
-            subtext="View Your Ex"
+            subtext="View Your  Plan or Generate New One"
           />
           <DietPlanInterface generatePlan={generateDietPlan} />
         </header>

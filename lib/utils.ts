@@ -13,9 +13,9 @@ export const authformSchema = (type: string) =>
     lastName: type === "sign-up" ? z.string().min(3) : z.string().optional(),
 
     // New diet/fitness fields
-    age: type === "sign-up" ? z.coerce.number().min(1).max(120).optional() : z.never().optional(),
-    weight: type === "sign-up" ? z.coerce.number().min(1).optional() : z.never().optional(),
-    height: type === "sign-up" ? z.coerce.number().min(1).optional() : z.never().optional(),
+    age: type === "sign-up" ? z.coerce.number().min(2).max(140) : z.never().optional(),
+    weight: type === "sign-up" ? z.coerce.number().min(1) : z.never().optional(),
+    height: type === "sign-up" ? z.coerce.number().min(1) : z.never().optional(),
     gender: type === "sign-up" ? z.enum(["Male", "Female", "Other"]) : z.never().optional(),
     dietaryRestrictions: type === "sign-up" ? z.enum(["None", "Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free", "Other"]) : z.never().optional(),
     healthIssues: type === "sign-up" ? z.string() : z.never().optional(),

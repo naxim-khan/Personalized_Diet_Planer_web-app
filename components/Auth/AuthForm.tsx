@@ -2,15 +2,11 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-
 import { Button } from "../../components/ui/button"
-import {
-    Form,
-} from "../../components/ui/form"
+import { Form } from "../../components/ui/form"
 import CustomInput from '../../components/CustomInput'
 import { authformSchema } from "../../lib/utils"
 import { Loader2 } from 'lucide-react'
@@ -18,16 +14,29 @@ import { useRouter } from 'next/navigation'
 import { SignUpParams } from '../../types/index'
 import { signIn, signUp } from '../../lib/actions/users.action'
 import CustomSelect from '../../components/CustomSelect'
+import { Progress } from "../../components/ui/progress"
+
+import {
+    GENDER_OPTIONS,
+    DIETARY_RESTRICTIONS,
+    ACTIVITY_LEVEL,
+    FITNESS_GOALS,
+    LIFESTYLE_OPTIONS,
+    MEAL_TYPE,
+    PREFERRED_CUISINE,
+    COOKING_STYLE
+} from '../../constants'
 
 const AuthForm = ({ type }: { type: string }) => {
     const router = useRouter();
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [currentStep, setCurrentStep] = useState(1);
+    const [progress, setProgress] = useState(20);
+    const steps = type === 'sign-up' ? 5 : 1;
 
     const formSchema = authformSchema(type);
 
-    // 1. Define your form.
-    // Replace your current useForm initialization with:
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -54,21 +63,40 @@ const AuthForm = ({ type }: { type: string }) => {
         },
     })
 
-    // 2. Define a submit handler.
+    const handleNext = async () => {
+        const fields = stepFields[currentStep - 1];
+        const isValid = await form.trigger(fields as any);
+
+        if (isValid) {
+            const newStep = Math.min(currentStep + 1, steps);
+            setCurrentStep(newStep);
+            setProgress((newStep / steps) * 100);
+        }
+    };
+
+    const handlePrev = () => {
+        const newStep = Math.max(currentStep - 1, 1);
+        setCurrentStep(newStep);
+        setProgress(((newStep - 1) / steps) * 100);
+    };
+
+    const stepFields = [
+        ['firstName', 'lastName', 'email', 'password'],
+        ['age', 'weight', 'height', 'gender'],
+        ['dietaryRestrictions', 'healthIssues', 'fitnessGoal', 'activityLevel'],
+        ['lifestyle', 'country', 'region'],
+        ['mealType', 'preferredCuisine', 'cookingStyle']
+    ];
+
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
         setIsLoading(true);
         try {
             if (type === 'sign-up') {
                 const response = await signUp(data as SignUpParams);
-
                 if (response?.error) {
-                    form.setError('root', {
-                        type: 'manual',
-                        message: response.error
-                    });
+                    form.setError('root', { type: 'manual', message: response.error });
                     return;
                 }
-
                 if (response?.user) {
                     setUser(response.user);
                     router.push('/dashboard');
@@ -80,15 +108,10 @@ const AuthForm = ({ type }: { type: string }) => {
                     email: data.email,
                     password: data.password,
                 });
-
                 if (response?.error) {
-                    form.setError('root', {
-                        type: 'manual',
-                        message: response.error
-                    });
+                    form.setError('root', { type: 'manual', message: response.error });
                     return;
                 }
-
                 if (response) router.push('/dashboard');
             }
         } catch (error: any) {
@@ -102,248 +125,307 @@ const AuthForm = ({ type }: { type: string }) => {
     }
 
     return (
-        <section className='auth-form'>
-            <header className='flex flex-col gap-5 md:gap-8'>
-                <Link
-                    href={"/"}
-                    className='cursor-pointer items-center gap-0 flex px-4'
-                >
-                    <Image
-                        src={"/img/LOGO.png"}
-                        width={50}
-                        height={50}
-                        alt='MyDiet Logo'
-                    />
-                    <h1 className='text-26 font-ibm-plex-serif font-bold text-black-1'>MyDiet</h1>
-                </Link>
+        <section className='max-w-4xl mx-auto h-screen w-full flex items-center justify-center'>
+            <div className='bg-white rounded-2xl shadow-lg p-6  sm:p-8  md:p-12  max-w-2xl w-full '>
+                <header className='text-center mb-2'>
+                    <div className='flex justify-center mb-6'>
+                        <Link href="/" >
+                            <Image
+                                src={"/img/LOGO.png"}
+                                width={60}
+                                height={60}
+                                alt='MyDiet Logo'
+                                className='rounded-lg'
+                                priority
+                            />
+                        </Link>
+                    </div>
 
-                <div className="flex flex-col gap-1 md:gap-3">
-                    <h1 className='text-24 lg:text-36 font-semibold text-gray-900'>
-                        {
-                            user ? 'Link Account' : type === 'sign-in' ? 'Sign In' : 'Sign Up'
-                        }
+                    {type === 'sign-up' && (
+                        <div className='mb-8'>
+                            <Progress value={progress} className="h-2 bg-gray-200" />
+                            <div className='flex justify-between mt-4 text-sm text-gray-600'>
+                                {[...Array(steps)].map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center 
+                                            ${currentStep > i + 1 ? 'bg-green-500 text-white' :
+                                                currentStep === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                    >
+                                        {i + 1}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <h1 className='text-xl sm:text-3xl font-bold text-gray-900 mb-2'>
+                        {type === 'sign-in' ? 'Welcome Back' : 'Create Your Account'}
                     </h1>
-                    <p className='text-16 font-normal text-gray-600'>
-                        {
-                            user ? 'Link your account to get started' :
-                                'Please Enter Your Details'
-                        }
+                    <p className='text-gray-600 text-sm sm:text-lg'>
+                        {type === 'sign-in'
+                            ? 'Sign in to continue to your account'
+                            : 'Get started with your personalized nutrition plan'}
                     </p>
-                </div>
-            </header>
-            {user ? (
-                <div className='flex flex-col gap-4'>
-                    {/* Paid Link */}
-                </div>
-            ) : (
-                <>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                            {type === 'sign-up' && (
-                                <>
-                                    {/* Existing personal info fields */}
-                                    <div className="flex gap-4">
+                </header>
+
+                {form.formState.errors.root && (
+                    <div className='mb-6 p-4 bg-red-50 rounded-lg text-red-700'>
+                        {form.formState.errors.root.message}
+                    </div>
+                )}
+
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        {type === 'sign-up' ? (
+                            <>
+                                {/* Step 1: Personal Info */}
+                                {currentStep === 1 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <CustomInput
                                             control={form.control}
                                             name="firstName"
                                             label="First Name"
-                                            placeholder="FirstName"
-                                            type="string"
+                                            placeholder="John"
+                                            error={form.formState.errors.firstName}
                                         />
                                         <CustomInput
                                             control={form.control}
                                             name="lastName"
-                                            label="Weight (kg)"
-                                            placeholder="LastName"
-                                            type="string"
+                                            label="Last Name"
+                                            placeholder="Doe"
+                                            error={form.formState.errors.lastName}
+                                        />
+                                        <CustomInput
+                                            control={form.control}
+                                            name="email"
+                                            label="Email"
+                                            placeholder="john@example.com"
+                                            type="email"
+                                            error={form.formState.errors.email}
+                                        />
+                                        <CustomInput
+                                            control={form.control}
+                                            name="password"
+                                            label="Password"
+                                            placeholder="••••••••"
+                                            type="password"
+                                            error={form.formState.errors.password}
                                         />
                                     </div>
-                                    {/* New diet/fitness fields */}
-                                    <div className="flex gap-4">
+                                )}
+
+                                {/* Step 2: Physical Stats */}
+                                {currentStep === 2 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <CustomInput
                                             control={form.control}
                                             name="age"
                                             label="Age"
-                                            placeholder="Enter your age"
+                                            placeholder="25"
                                             type="number"
+                                            error={form.formState.errors.age}
                                         />
                                         <CustomInput
                                             control={form.control}
                                             name="weight"
                                             label="Weight (kg)"
-                                            placeholder="Enter your weight"
+                                            placeholder="70"
                                             type="number"
+                                            error={form.formState.errors.weight}
                                         />
                                         <CustomInput
                                             control={form.control}
                                             name="height"
                                             label="Height (cm)"
-                                            placeholder="Enter your height"
+                                            placeholder="175"
                                             type="number"
+                                            error={form.formState.errors.height}
+                                        />
+                                        <CustomSelect
+                                            control={form.control}
+                                            name="gender"
+                                            label="Gender"
+                                            options={GENDER_OPTIONS}
+                                            placeholder="Select gender"
+                                            error={form.formState.errors.gender}
                                         />
                                     </div>
+                                )}
 
-                                    <CustomSelect
-                                        control={form.control}
-                                        name="gender"
-                                        label="Gender"
-                                        placeholder="Select gender"
-                                        options={[
-                                            { value: "Male", label: "Male" },
-                                            { value: "Female", label: "Female" },
-                                            { value: "Other", label: "Other" }
-                                        ]}
-                                    />
+                                {/* Step 3: Health & Fitness */}
+                                {currentStep === 3 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <CustomInput
+                                            control={form.control}
+                                            name="healthIssues"
+                                            label="Health Issues"
+                                            placeholder="Comma separated values (e.g., GERD, Gastritis) or None"
+                                            error={form.formState.errors.healthIssues}
+                                        />
+                                        <CustomSelect
+                                            control={form.control}
+                                            name="dietaryRestrictions"
+                                            label="Dietary Restrictions"
+                                            options={DIETARY_RESTRICTIONS}
+                                            placeholder="Select restrictions"
+                                            error={form.formState.errors.dietaryRestrictions}
+                                        />
+                                        <CustomSelect
+                                            control={form.control}
+                                            name="fitnessGoal"
+                                            label="Fitness Goal"
+                                            options={FITNESS_GOALS}
+                                            placeholder="Select goal"
+                                            error={form.formState.errors.fitnessGoal}
+                                        />
+                                        <CustomSelect
+                                            control={form.control}
+                                            name="activityLevel"
+                                            label="Activity Level"
+                                            options={ACTIVITY_LEVEL}
+                                            placeholder="Select activity level"
+                                            error={form.formState.errors.activityLevel}
+                                        />
+                                    </div>
+                                )}
 
-                                    <CustomSelect
-                                        control={form.control}
-                                        name="dietaryRestrictions"
-                                        label="Dietary Restrictions"
-                                        placeholder="Select restrictions"
-                                        options={[
-                                            { value: "None", label: "None" },
-                                            { value: "Vegetarian", label: "Vegetarian" },
-                                            { value: "Vegan", label: "Vegan" },
-                                            { value: "Gluten-Free", label: "Gluten-Free" },
-                                            { value: "Dairy-Free", label: "Dairy-Free" },
-                                            { value: "Other", label: "Other" }
-                                        ]}
-                                    />
+                                {/* Step 4: Lifestyle & Location */}
+                                {currentStep === 4 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <CustomSelect
+                                            control={form.control}
+                                            name="lifestyle"
+                                            label="Lifestyle"
+                                            options={LIFESTYLE_OPTIONS}
+                                            placeholder="Select lifestyle"
+                                            error={form.formState.errors.lifestyle}
+                                        />
+                                        <CustomInput
+                                            control={form.control}
+                                            name="country"
+                                            label="Country"
+                                            placeholder="Enter your country"
+                                            error={form.formState.errors.country}
+                                        />
+                                        <CustomInput
+                                            control={form.control}
+                                            name="region"
+                                            label="Region"
+                                            placeholder="Enter your region"
+                                            error={form.formState.errors.region}
+                                        />
+                                    </div>
+                                )}
 
-                                    <CustomInput
-                                        control={form.control}
-                                        name="healthIssues"
-                                        label="Health Issues"
-                                        placeholder="Comma-separated health issues"
-                                    />
+                                {/* Step 5: Food Preferences */}
+                                {currentStep === 5 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <CustomSelect
+                                            control={form.control}
+                                            name="mealType"
+                                            label="Preferred Meal Type"
+                                            options={MEAL_TYPE}
+                                            placeholder="Select meal type"
+                                            error={form.formState.errors.mealType}
+                                        />
+                                        <CustomSelect
+                                            control={form.control}
+                                            name="preferredCuisine"
+                                            label="Preferred Cuisine"
+                                            options={PREFERRED_CUISINE}
+                                            placeholder="Select cuisine"
+                                            error={form.formState.errors.preferredCuisine}
+                                        />
+                                        <CustomSelect
+                                            control={form.control}
+                                            name="cookingStyle"
+                                            label="Cooking Style"
+                                            options={COOKING_STYLE}
+                                            placeholder="Select cooking style"
+                                            error={form.formState.errors.cookingStyle}
+                                        />
+                                    </div>
+                                )}
 
-                                    <CustomSelect
-                                        control={form.control}
-                                        name="fitnessGoal"
-                                        label="Fitness Goal"
-                                        placeholder="Select fitness goal"
-                                        options={[
-                                            { value: "Muscle Gain", label: "Muscle Gain" },
-                                            { value: "Weight Loss", label: "Weight Loss" },
-                                            { value: "Maintenance", label: "Maintenance" },
-                                            { value: "Other", label: "Other" }
-                                        ]}
-                                    />
+                                <div className="flex justify-between mt-8">
+                                    {currentStep > 1 && (
+                                        <Button
+                                            type="button"
+                                            onClick={handlePrev}
+                                            variant="outline"
+                                            className="px-6"
+                                        >
+                                            Previous
+                                        </Button>
+                                    )}
 
-                                    <CustomSelect
-                                        control={form.control}
-                                        name="activityLevel"
-                                        label="Activity Level"
-                                        placeholder="Select activity level"
-                                        options={[
-                                            { value: "Little to No Exercise", label: "Little to No Exercise" },
-                                            { value: "Light Exercise", label: "Light Exercise" },
-                                            { value: "Moderate Exercise", label: "Moderate Exercise" },
-                                            { value: "Heavy Exercise", label: "Heavy Exercise" }
-                                        ]}
-                                    />
-
-                                    <CustomSelect
-                                        control={form.control}
-                                        name="lifestyle"
-                                        label="Lifestyle"
-                                        placeholder="Select lifestyle"
-                                        options={[
-                                            { value: "Non-smoker", label: "Non-smoker" },
-                                            { value: "Smoker", label: "Smoker" },
-                                            { value: "Occasional Smoker", label: "Occasional Smoker" },
-                                            { value: "Other", label: "Other" }
-                                        ]}
-                                    />
-
-                                    <CustomInput
-                                        control={form.control}
-                                        name="country"
-                                        label="Country"
-                                        placeholder="Enter your country"
-                                    />
-
-                                    <CustomInput
-                                        control={form.control}
-                                        name="region"
-                                        label="Region"
-                                        placeholder="Enter your region"
-                                    />
-
-                                    <CustomSelect
-                                        control={form.control}
-                                        name="mealType"
-                                        label="Meal Type"
-                                        placeholder="Select meal type"
-                                        options={[
-                                            { value: "Balanced", label: "Balanced" },
-                                            { value: "High Protein", label: "High Protein" },
-                                            { value: "Low Carb", label: "Low Carb" },
-                                            { value: "Other", label: "Other" }
-                                        ]}
-                                    />
-
-                                    <CustomSelect
-                                        control={form.control}
-                                        name="preferredCuisine"
-                                        label="Preferred Cuisine"
-                                        placeholder="Select cuisine"
-                                        options={[
-                                            { value: "Pakistani", label: "Pakistani" },
-                                            { value: "Italian", label: "Italian" },
-                                            { value: "Mexican", label: "Mexican" },
-                                            { value: "Other", label: "Other" }
-                                        ]}
-                                    />
-
-                                    <CustomSelect
-                                        control={form.control}
-                                        name="cookingStyle"
-                                        label="Cooking Style"
-                                        placeholder="Select cooking style"
-                                        options={[
-                                            { value: "Home-Cooked", label: "Home-Cooked" },
-                                            { value: "Restaurant", label: "Restaurant" },
-                                            { value: "Takeout", label: "Takeout" },
-                                            { value: "Other", label: "Other" }
-                                        ]}
-                                    />
-                                </>
-                            )}
-                            <CustomInput
-                                control={form.control}
-                                name='email'
-                                label='Email'
-                                placeholder="Enter your email"
-                            />
-                            <CustomInput
-                                control={form.control}
-                                name='password'
-                                label='Password'
-                                placeholder="Enter your password"
-                            />
-                            <div className='flex flex-col gap-4'>
-                                <Button type="submit" disabled={isLoading} className='form-btn'>
+                                    {currentStep < steps ? (
+                                        <Button
+                                            type="button"
+                                            onClick={handleNext}
+                                            className="ml-auto px-8"
+                                        >
+                                            Next
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            type="submit"
+                                            disabled={isLoading}
+                                            className="px-8 bg-green-600 hover:bg-green-700 ml-auto"
+                                        >
+                                            {isLoading ? (
+                                                <Loader2 className="animate-spin h-5 w-5" />
+                                            ) : 'Complete Registration'}
+                                        </Button>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            /* Sign-in Form */
+                            <div className="space-y-6">
+                                <CustomInput
+                                    control={form.control}
+                                    name="email"
+                                    label="Email"
+                                    placeholder="john@example.com"
+                                    type="email"
+                                    error={form.formState.errors.email}
+                                />
+                                <CustomInput
+                                    control={form.control}
+                                    name="password"
+                                    label="Password"
+                                    placeholder="••••••••"
+                                    type="password"
+                                    error={form.formState.errors.password}
+                                />
+                                <Button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white "
+                                >
                                     {isLoading ? (
-                                        <>
-                                            <Loader2 size={20} className='animate-spin' /> &nbsp; Loading...
-                                        </>
-                                    ) : type === 'sign-in' ? 'Sign In' : 'Sign Up'}
+                                        <Loader2 className="animate-spin h-5 w-5" />
+                                    ) : 'Sign In'}
                                 </Button>
                             </div>
-                        </form>
-                    </Form>
+                        )}
 
-                    <div className='flex justify-center gap-1'>
-                        <p className='text-14 font-normal text-gray-600'>
-                            {type === 'sign-in' ? "Don't have an account?" : "Already have an Account?"}
-                        </p>
-                        <Link className='underline text-green-700' href={type === 'sign-in' ? '/sign-up' : '/sign-in'}>
-                            {type === 'sign-in' ? 'Sign Up' : 'Sign In'}
-                        </Link>
-                    </div>
-                </>
-            )}
+                        <div className='text-center mt-6 text-sm text-gray-600'>
+                            {type === 'sign-in'
+                                ? "Don't have an account? "
+                                : "Already have an account? "}
+                            <Link
+                                href={type === 'sign-in' ? '/sign-up' : '/sign-in'}
+                                className="text-blue-600 hover:underline"
+                            >
+                                {type === 'sign-in' ? 'Create account' : 'Sign in'}
+                            </Link>
+                        </div>
+                    </form>
+                </Form>
+            </div>
         </section>
     )
 }

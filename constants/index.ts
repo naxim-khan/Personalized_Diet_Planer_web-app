@@ -152,3 +152,60 @@ export const transactionCategoryStyles = {
         chipBackgroundColor: "bg-inherit",
     },
 };
+
+export const GENDER_OPTIONS = [
+    { value: " ", label: "--Select Gender--" },
+    { value: "Male", label: "Male" },
+    { value: "Female", label: "Female" },
+] as const;
+
+export const DIETARY_RESTRICTIONS = [
+    { value: " ", label: "--Select Dietary Restrictions--" },
+    { value: "None", label: "None" },
+    { value: "Vegetarian", label: "Vegetarian" },
+    { value: "Vegan", label: "Vegan" },
+    { value: "Gluten-Free", label: "Gluten-Free" },
+    { value: "Dairy-Free", label: "Dairy-Free" },
+] as const;
+
+export const ACTIVITY_LEVEL = [
+    { value: " ", label: "--Select ActivityLevel--" },
+    { value: "Little to No Exercise", label: "Little to No Exercise" },
+    { value: "Light Exercise", label: "Light Exercise" },
+    { value: "Moderate Exercise", label: "Moderate Exercise" },
+    { value: "Heavy Exercise", label: "Heavy Exercise" }
+] as const;
+
+export const FITNESS_GOALS = [
+    { value: " ", label: "--Select Your Goal--" },
+    { value: "Weight Loss", label: "Weight Loss" },
+    { value: "Muscle Gain", label: "Muscle Gain" },
+    { value: "Maintenance", label: "Maintenance" },
+    { value: "Other", label: "Other" }
+  ];
+  
+  export const LIFESTYLE_OPTIONS = [
+    { value: " ", label: "--Select Any Option--" },
+    { value: "Non-Smoker", label: "Non-Smoker" },
+    { value: "Smoker", label: "Smoker" },
+    { value: "Occasional Smoker", label: "Occasional Smoker" }
+  ];
+  
+  export const MEAL_TYPE = [
+    { value: "Balanced", label: "Balanced" },
+    { value: "High Protein", label: "High Protein" },
+    { value: "Low Carb", label: "Low Carb" }
+  ];
+  
+  export const PREFERRED_CUISINE = [
+    { value: "Pakistani", label: "Pakistani" },
+    { value: "Italian", label: "Italian" },
+    { value: "Mexican", label: "Mexican" }
+  ];
+  
+  export const COOKING_STYLE = [
+    { value: "Home-Cooked", label: "Home Cooking" },
+    { value: "Restaurant", label: "Resturants" },
+    { value: "Takeout", label: "Takeout" },
+    { value: "Other", label: "Other" }
+  ];

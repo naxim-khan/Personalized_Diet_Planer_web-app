@@ -2,20 +2,21 @@
 import { useState, useRef, useEffect } from "react";
 import { DietPlan } from "../../lib/actions/dietplan.action";
 import { DietPlanTypes } from "../../types/index"
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { Button } from "../../components/ui/button";
 import { toPng } from 'html-to-image';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "../../components/ui/alert";
-import { Badge } from "../../components/ui/badge";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { UserOptions } from "../../types/dietPlan";
-import { Egg, Utensils, Cookie, Drumstick } from "lucide-react";
 import { TriangleAlert } from "lucide-react";
 import { Trash2 } from "lucide-react";
 import DietPlanPDF from '../../components/DietPlanPDF';
 import { PDFDownloadLink } from '@react-pdf/renderer';
+
+import { Header } from "./DietPlanUI/Header";
+import { MealPlanTable } from "./DietPlanUI/MealPlanTable";
+import { OverviewSection } from "./DietPlanUI/OverviewSection";
+import { UserDetails } from "./DietPlanUI/UserDetails";
+import { AdditionalSection } from "./DietPlanUI/AdditionalSection";
 
 export default function DietPlanInterface({ generatePlan }: { generatePlan: (options: UserOptions) => Promise<DietPlan | { error: string }> }) {
     const [dietPlan, setDietPlan] = useState<DietPlanTypes | null>(null);
@@ -29,31 +30,9 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
     const [localPlan, setLocalPlan] = useState<DietPlanTypes | null>(null);
 
-    // PDF Generate Logic
-    const chartRef = useRef(null);
+    const chartRef = useRef<HTMLDivElement>(null);
     const [pdfReady, setPdfReady] = useState(false);
     const [chartImage, setChartImage] = useState<string | null>(null);
-
-    // Retry Logic
-    const [retryCount, setRetryCount] = useState(0);
-    const [retryMessage, setRetryMessage] = useState<string | null>(null);
-
-    const getMacronutrientData = () => {
-        if (!dietPlan?.macronutrient_distribution) return [];
-        // Extract numerical values from strings like "150g"
-        const extractGrams = (str: string) => parseFloat(str.replace('g', ''));
-
-        const protein = extractGrams(dietPlan.macronutrient_distribution.protein);
-        const carbs = extractGrams(dietPlan.macronutrient_distribution.carbohydrates);
-        const fats = extractGrams(dietPlan.macronutrient_distribution.fats);
-
-        // Calculate calorie contributions (4 cal/g for protein/carbs, 9 cal/g for fats)
-        return [
-            { name: "Protein", value: protein * 4 },
-            { name: "Carbs", value: carbs * 4 },
-            { name: "Fat", value: fats * 9 },
-        ];
-    };
 
     // 🟢 Fetch user data on component mount
     useEffect(() => {
@@ -208,15 +187,13 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
     };
 
     // Diet plan validation function
-    const validateDietPlan = (plan: any): plan is DietPlan => {
-        return (
-            plan?.daily_plan?.length > 0 &&
-            plan?.macronutrient_distribution &&
-            plan?.calories_per_day
-        );
-    };
-
-    // 🟢 Auto-Retry Database Storage
+    // const validateDietPlan = (plan: any): plan is DietPlan => {
+    //     return (
+    //         plan?.daily_plan?.length > 0 &&
+    //         plan?.macronutrient_distribution &&
+    //         plan?.calories_per_day
+    //     );
+    // };
     // useEffect(() => {
     //     const retryStorage = async () => {
     //         const storedPlan = localStorage.getItem("dietPlan");
@@ -306,86 +283,19 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
         }
     };
 
-    const LegendBadges = () => {
-        const data = getMacronutrientData();
-        if (!data.length) return null;
-
-        return (
-            <div className="flex gap-2 mt-4">
-                {data.map((entry, index) => {
-                    // Get original grams from dietPlan
-                    const grams = entry.value / (entry.name === 'Fat' ? 9 : 4);
-                    return (
-                        <div key={index} className="flex items-center gap-2">
-                            <div
-                                className="w-4 h-4 rounded-full"
-                                style={{ backgroundColor: COLORS[index] }}
-                            ></div>
-                            <span className="text-sm">
-                                {entry.name} ({grams}g)
-                            </span>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
-
 
     const handleDelete = async () => {
         setShowDeleteConfirmation(true);
     };
 
-    // const handleConfirmDelete = async () => {
-    //     if (!dietPlan) return;
-
-    //     try {
-    //         const response = await fetch(`${window.location.origin}/api/dietplans/${dietPlan}`, {
-    //             method: "DELETE",
-    //         });
-
-    //         if (!response.ok) throw new Error("Failed to delete diet plan");
-
-    //         localStorage.removeItem("dietPlan");
-    //         setDietPlan(null);
-    //         setShowDeleteConfirmation(false);
-    //     } catch (error) {
-    //         console.error("❌ Error deleting diet plan:", error);
-    //     }
-    // };
-
-    const generatePDF = async () => {
-        try {
-            // Capture chart as image
-            if (chartRef.current) {
-                const chartUrl = await toPng(chartRef.current);
-                setChartImage(chartUrl);
-            }
-            setPdfReady(true);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-        }
-    };
 
     interface BMICalculation {
         weight: number;
         height: number;
     }
 
-    const calculateBMI = ({ weight, height }: BMICalculation): string => {
-        // Convert height from cm to meters
-        height = height ? height / 100 : 0;
-        weight = weight || 0;
-
-        // Calculate BMI
-        const bmi = weight / (height ** 2);
-
-        // Return BMI, rounded to 2 decimal places
-        return bmi.toFixed(2);
-    }
-
     return (
-        <div className="p-4 md:p-6 w-full bg-gray-50 rounded-2xl border-2 mx-auto space-y-6">
+        <div className="p-2 py-4 md:p-6 w-full bg-gray-50 rounded-2xl border border-gray-100 mx-auto space-y-6">
 
             {/* Status Alert */}
             {saveStatus === 'saving' && (
@@ -458,7 +368,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
             )}
 
             {/* Control Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-row gap-4">
                 <Button
                     onClick={dietPlan ? handleDelete : handleGenerate}
                     size="lg"
@@ -488,7 +398,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                                     Crafting your meal plan...
                                 </p>
                                 <p className="text-sm text-gray-500 mt-2">
-                                    This usually takes 2-5 minutes
+                                    This usually takes 30-50 seconds
                                 </p>
                             </div>
                         </div>
@@ -525,7 +435,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                     </div>
                 </Button>
 
-                
+
                 {dietPlan && (
                     <div className="relative">
                         {!pdfReady ? (
@@ -581,292 +491,14 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                 </Alert>
             )}
 
+            {/* Diet Plan UI Interface */}
             {dietPlan && (
                 <div ref={printRef} className="space-y-4">
-                    {/* Header */}
-                    <Card className="bg-background rounded-none border-0 shadow-sm">
-                        <CardContent className="px-4 py-3 md:px-6 md:py-4">
-                            <div className="flex items-center gap-4 md:gap-6">
-                                {/* Logo with subtle accent */}
-                                <div className="flex items-center">
-                                    <img
-                                        src="/img/LOGO.png"
-                                        alt="Site Logo"
-                                        className="h-10 md:h-12 w-auto"
-                                    />
-                                    <div className="ml-2 h-8 w-px bg-emerald-200/80 hidden md:block"></div>
-                                </div>
-
-                                {/* Title with gradient text */}
-                                <div className="flex-1">
-                                    <h1 className="text-xl md:text-2xl font-semibold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
-                                        Personalized Nutrition Plan
-                                        <span className="block md:inline-block text-sm md:text-base font-normal text-emerald-600/90 mt-1 md:mt-0 md:ml-3">
-                                            {userData?.user?.fitnessGoal && `(Optimized for ${userData.user.fitnessGoal})`}
-                                        </span>
-                                    </h1>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* User Details */}
-                    <Card className="border-0 shadow-none">
-                        <CardHeader className="pb-3 px-4">
-                            <CardTitle className="text-base font-medium text-gray-900 flex items-center gap-2">
-                                <span>{userData?.user?.firstName} {userData?.user?.lastName}</span>
-                                <span className="text-xs font-normal text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                                    {userData?.user?.country}
-                                </span>
-                            </CardTitle>
-                        </CardHeader>
-
-                        <CardContent className="px-4 pt-0 grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <div className="text-sm text-gray-600">
-                                <p className="font-medium">Activity Level</p>
-                                <p className="text-emerald-700">{userData?.user?.activityLevel}</p>
-                            </div>
-
-                            <div className="text-sm text-gray-600">
-                                <p className="font-medium">Cooking Style</p>
-                                <p className="text-emerald-700">{userData?.user?.cookingStyle}</p>
-                            </div>
-
-                            <div className="text-sm text-gray-600">
-                                <p className="font-medium">Dietary Restrictions</p>
-                                <p className="text-emerald-700">{userData?.user?.dietaryRestrictions}</p>
-                            </div>
-
-                            <div className="text-sm text-gray-600">
-                                <p className="font-medium">Preferred Cuisine</p>
-                                <p className="text-emerald-700">{userData?.user?.preferredCuisine}</p>
-                            </div>
-
-                            {userData?.user?.weight && userData?.user?.height && (
-                                <div className="text-sm text-gray-600">
-                                    <p className="font-medium">BMI</p>
-                                    <p className={
-                                        (() => {
-                                            const bmi = parseFloat(calculateBMI({
-                                                weight: userData.user.weight,
-                                                height: userData.user.height
-                                            }));
-                                            if (bmi < 18.5) return "text-red-600";
-                                            if (bmi >= 25) return "text-red-600";
-                                            if (bmi >= 23) return "text-amber-600";
-                                            return "text-emerald-600";
-                                        })()
-                                    }>
-                                        {calculateBMI({
-                                            weight: userData.user.weight || 0,
-                                            height: userData.user.height || 0
-                                        })}
-                                    </p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Overview Section */}
-                    <div className="grid gap-4 md:gap-5 lg:grid-cols-2 rounded-lg bg-white p-4 shadow-xs">
-                        {/* Nutrition Card */}
-                        <Card className="border-0 shadow-none bg-emerald-50/20 p-3 rounded-lg">
-                            <CardHeader className="pb-2 px-0">
-                                <div className="flex justify-between items-center">
-                                    <CardTitle className="text-lg font-semibold text-emerald-800">
-                                        Nutrition Overview
-                                    </CardTitle>
-                                    <Badge
-                                        variant="outline"
-                                        className="text-base py-0.5 px-2.5 border-emerald-200 text-emerald-700 bg-white"
-                                    >
-                                        {dietPlan.calories_per_day} kcal
-                                    </Badge>
-                                </div>
-                                <div className="border-b border-emerald-100 mt-2"></div>
-                            </CardHeader>
-
-                            <CardContent className="p-0" ref={chartRef}>
-                                <div className="h-[180px] lg:h-[200px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={getMacronutrientData()}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={45}
-                                                outerRadius={75}
-                                                paddingAngle={1}
-                                                dataKey="value"
-                                                label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                                            >
-                                                {getMacronutrientData().map((entry, index) => (
-                                                    <Cell
-                                                        key={`cell-${index}`}
-                                                        fill={COLORS[index % COLORS.length]}
-                                                    />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip
-                                                formatter={(value: number) => [`${Math.round(value)} kcal`, '']}
-                                                contentStyle={{
-                                                    borderRadius: '10px',
-                                                    border: '1px solid #d1fae5',
-                                                    boxShadow: '0 2px 4px -1px rgb(0 0 0 / 0.05)'
-                                                }}
-                                            />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-
-                                <div className="mt-3 flex flex-wrap gap-2 justify-center">
-                                    <LegendBadges />
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Guidelines Card */}
-                        {dietPlan.instructions && dietPlan.instructions.length > 0 && (
-                            <Card className="border-0 shadow-none bg-white p-3 rounded-lg">
-                                <CardHeader className="pb-2 px-0">
-                                    <CardTitle className="text-lg font-semibold text-emerald-800">
-                                        Key Guidelines
-                                    </CardTitle>
-                                    <div className="border-b border-emerald-100 mt-2"></div>
-                                </CardHeader>
-
-                                <CardContent className="p-0">
-                                    <ul className="space-y-2">
-                                        {dietPlan.instructions?.map((instruction, index) => (
-                                            <li
-                                                key={index}
-                                                className="flex items-start gap-2 p-2 rounded-md bg-emerald-50/30 hover:bg-emerald-50/50 transition-colors"
-                                            >
-                                                <div className="shrink-0 w-5 h-5 bg-emerald-500/10 text-emerald-700 text-sm rounded-full flex items-center justify-center">
-                                                    {index + 1}
-                                                </div>
-                                                <p className="text-sm leading-snug text-gray-700">
-                                                    {instruction}
-                                                </p>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
-
-                    {/* Meal Plan Table */}
-                    <div className="grid grid-cols-1 gap-8">
-                        {dietPlan.daily_plan?.map((dayPlan, index) => (
-                            <Card key={dayPlan.day} className="w-full bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out">
-                                {/* Day Header with Progress Psychology */}
-                                <CardHeader className="px-6 py-2 bg-emerald-50/70 rounded-t-xl border-b border-emerald-100">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
-                                                <CardTitle className="text-lg font-bold text-emerald-800">
-                                                    Day {index + 1}
-                                                </CardTitle>
-                                            </div>
-                                            <span className="text-sm text-emerald-600/80">
-                                                {index + 1} of {dietPlan.daily_plan.length} days
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-emerald-600">
-                                            <span className="text-sm">{dietPlan.calories_per_day}</span>
-                                            <span className="text-xs">kcal/day</span>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-
-                                <CardContent className="p-6 grid lg:grid-cols-2 gap-6">
-                                    {/* Meal Sections with Color Coding */}
-                                    {[['breakfast', <Egg className="w-5 h-5 text-yellow-500" />, 'Morning Energy', 'border-amber-200 bg-amber-50'],
-                                    ['lunch', <Utensils className="w-5 h-5 text-blue-500" />, 'Midday Fuel', 'border-lime-200 bg-lime-50'],
-                                    ['snacks', <Cookie className="w-5 h-5 text-orange-500" />, 'Sustained Energy', 'border-emerald-200 bg-emerald-50'],
-                                    ['dinner', <Drumstick className="w-5 h-5 text-red-500" />, 'Evening Recovery', 'border-teal-200 bg-teal-50']].map(([mealType, icon, title, colors]) => (
-                                        <div key={`${mealType}`} className={`p-4 rounded-xl border ${colors} transition-colors hover:border-opacity-70`}>
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <span className="text-2xl">{icon}</span>
-                                                <h3 className="text-lg font-semibold text-gray-800">
-                                                    {title}
-                                                    <span className="ml-2 text-sm text-gray-500 font-normal">
-                                                        ({Array.isArray(dayPlan[mealType as keyof typeof dayPlan]) ? (dayPlan[mealType as keyof typeof dayPlan] as { meal: string; ingredients: string[] }[]).length : 0} options)
-                                                    </span>
-                                                </h3>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                {Array.isArray(dayPlan[mealType as keyof typeof dayPlan])
-                                                    ? (dayPlan[mealType as keyof typeof dayPlan] as { meal: string; ingredients: string[] }[]).map((meal, i) => (
-                                                        <div
-                                                            key={i}
-                                                            className="group relative pl-4 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-4/5 before:bg-emerald-400 before:rounded-full before:opacity-50 before:transition-opacity hover:before:opacity-80"
-                                                        >
-                                                            <div className="font-medium text-gray-800 transition-colors group-hover:text-emerald-700">
-                                                                {meal.meal}
-                                                            </div>
-                                                            <p className="text-sm text-gray-600/90 mt-1 leading-relaxed">
-                                                                {meal.ingredients.join(", ")}
-                                                            </p>
-                                                        </div>
-                                                    ))
-                                                    : null /* Avoids calling .map() on a number */
-                                                }
-
-                                            </div>
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-
-                    {/* Additional Sections */}
-                    <div className="grid gap-px md:grid-cols-2 bg-gray-100/50 rounded-lg overflow-hidden border border-gray-200">
-                        {/* Foods to Avoid */}
-                        {(dietPlan.foods_to_avoid ?? []).length > 0 && (
-                            <div className="bg-white p-4">
-                                <div className="flex flex-col space-y-2">
-                                    <h3 className="text-sm font-semibold text-red-600 uppercase tracking-wide">
-                                        <span className="border-b-2 border-red-100 pb-1">Foods to Avoid</span>
-                                    </h3>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {dietPlan.foods_to_avoid?.map((food, index) => (
-                                            <span
-                                                key={index}
-                                                className="px-2 py-1 text-xs font-medium bg-red-50/60 text-red-700 rounded-md border border-red-200"
-                                            >
-                                                {food}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Ingredients List */}
-                        {dietPlan.all_ingredients && dietPlan.all_ingredients.length > 0 && (
-                            <div className="bg-white p-4">
-                                <div className="flex flex-col space-y-2">
-                                    <h3 className="text-sm font-semibold text-emerald-600 uppercase tracking-wide">
-                                        <span className="border-b-2 border-emerald-100 pb-1">Ingredients Included in Plan</span>
-                                    </h3>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {dietPlan.all_ingredients.map((ingredient, index) => (
-                                            <span
-                                                key={index}
-                                                className="px-2 py-1 text-xs font-medium bg-emerald-50/60 text-emerald-700 rounded-md border border-emerald-200"
-                                            >
-                                                {ingredient}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    <Header userData={userData} />
+                    <UserDetails userData={userData} />
+                    <OverviewSection dietPlan={dietPlan} COLORS={COLORS} chartRef={chartRef} />
+                    <MealPlanTable dietPlan={dietPlan} />
+                    <AdditionalSection dietPlan={dietPlan} />
                 </div>
             )}
         </div>

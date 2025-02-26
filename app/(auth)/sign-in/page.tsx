@@ -3,7 +3,9 @@ import AuthForm from '../../../components/Auth/AuthForm'
 const SignIn = () => {
   return (
     <section className='flex-center size-full max-sm:px-6 h-screen'>
-      <AuthForm type="sign-in" />
+      <div className=' max-w-lg w-full'>
+        <AuthForm type="sign-in" />
+      </div>
     </section>
   )
 }
