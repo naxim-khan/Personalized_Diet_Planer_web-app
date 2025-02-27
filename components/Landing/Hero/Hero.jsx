@@ -7,19 +7,19 @@ import Link from 'next/link';
 
 const Hero = () => {
   return (
-    <section className='mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-screen flex flex-col items-center justify-center mt-20 sm:mt-0' id='home'>
+    <section className='mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl  flex flex-col items-center justify-center mt-20 md:mt-6 ' id='home'>
       <div className='container w-full grid grid-cols-1 md:grid-cols-2 min-h-[650px] relative justify-center py-8 sm:py-2'>
         {/* platform Info */}
         <div className='flex flex-col justify-center md:py-0 relative z-10'>
           <div className='text-center md:text-left space-y-6 lg:max-w-[500px] '>
-            <motion.h3
+            {/* <motion.h3
               variants={FadeLeft(0.4)}
               initial='hidden'
               animate='visible'
               className="text-xl lg:text-2xl font-bold"
             >
               Transform Your Health with
-            </motion.h3>
+            </motion.h3> */}
             <motion.h1
               variants={FadeRight(0.5)}
               initial='hidden'
@@ -31,7 +31,7 @@ const Hero = () => {
               variants={FadeUp(0.6)}
               initial='hidden'
               animate='visible'
-              className="text-2xl font-semibold"
+              className="text-xl sm:text-2xl font-semibold text-gray-800"
             >
               Register Now For Fresh Healthy Life
             </motion.p>

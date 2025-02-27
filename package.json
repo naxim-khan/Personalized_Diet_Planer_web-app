@@ -36,7 +36,7 @@
     "lucide-react": "^0.474.0",
     "mini-svg-data-uri": "^1.4.4",
     "mongoose": "^8.10.1",
-    "motion": "^12.4.1",
+    "motion": "^12.4.7",
     "next": "15.1.6",
     "next-auth": "^4.24.11",
     "node-appwrite": "^15.0.0",

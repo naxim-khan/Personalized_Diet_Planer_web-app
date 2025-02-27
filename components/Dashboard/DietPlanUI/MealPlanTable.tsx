@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Egg, Utensils, Cookie, Drumstick } from "lucide-react";
 import { DietPlanTypes } from "../../../types";
+import { Pointer } from "../../../components/magicui/pointer";
 
 export function MealPlanTable({ dietPlan }: { dietPlan: DietPlanTypes }) {
     return (
-        <div className="grid grid-cols-1 gap-8">
+        <div className="grid grid-cols-1 gap-8 static z-10">
             {dietPlan.daily_plan?.map((dayPlan, index) => (
                 <Card key={dayPlan.day} className="w-full bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 ease-in-out border border-gray-100">
                     {/* Day Header with Progress Psychology */}
@@ -63,6 +64,9 @@ export function MealPlanTable({ dietPlan }: { dietPlan: DietPlanTypes }) {
                                     }
 
                                 </div>
+                                <Pointer>
+                                    <div className="text-2xl">🍉</div>
+                                </Pointer>
                             </div>
                         ))}
                     </CardContent>

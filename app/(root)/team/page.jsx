@@ -35,7 +35,7 @@ const Team = () => {
     return (
         <section className=' w-full'>
             <div className='mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl py-4'>
-                <div className='container w-full grid grid-cols-1 md:grid-cols-2 min-h-[650px] relative justify-center py-8 sm:py-2'>
+                <div className='container w-full grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 min-h-[650px] relative justify-center py-8 sm:py-2'>
                     {/* platform Info */}
                     <div className='flex flex-col justify-center mt-8 md:mt-2 md:py-0 relative  '>
                         <div className='text-center md:text-left space-y-6 lg:max-w-[500px] '>
@@ -51,7 +51,7 @@ const Team = () => {
                                 variants={FadeLeft(0.7)}
                                 initial='hidden'
                                 animate='visible'
-                                className='text-gray-600 text-lg pb-10 sm:pb-0'>
+                                className='text-gray-600 text-base sm:text-lg pb-10 sm:pb-0 text-balance'>
                                 Welcome to Personalized Diet Planning Platform, a health-driven initiative created by a team of passionate Computer Science students. As part of our final-year project, we wanted to build something meaningful—an app that helps people stay healthy and make better lifestyle choices.
 
                                 This is just the beginning, and with your support, we can grow and improve the platform to offer even more tools and resources for a healthier life. Together, we can help you make healthier decisions, track your progress, and work towards your wellness goals.

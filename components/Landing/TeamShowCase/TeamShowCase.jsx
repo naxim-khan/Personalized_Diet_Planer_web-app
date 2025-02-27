@@ -31,13 +31,15 @@ const TeamShowCase = () => {
                 >
                     Our Team Members
                 </h1>
-                <p className="text-gray-600 text-lg pb-10 sm:pb-0 py-3">
-                    Lorem ipsum dolor sit, amet consectetur adipisicing elit. Veritatis quos pariatur iure neque quia vitae sed officia natus velit dolor expedita, consectetur optio a incidunt hic delectus placeat aperiam molestias ex eveniet non consequuntur? Voluptatum.
-                </p>
+                <div className="w-full flex items-center justify-center">
+                    <p className="text-gray-600 text-base sm:text-lg pb-8 sm:pb-0 py-3 max-w-6xl ">
+                        Lorem ipsum dolor sit, amet consectetur adipisicing elit. Veritatis quos pariatur iure neque quia vitae sed officia natus velit dolor expedita, consectetur optio a incidunt hic delectus placeat aperiam molestias ex eveniet non consequuntur? Voluptatum.
+                    </p>
+                </div>
             </div>
 
             {/* Cards */}
-            <div className="m-container w-full bg-cover h-full" >
+            <div className="m-container w-full bg-cover " >
                 {card_content.map((card, index) => (
                     <div className="m-card " style={{ "--clr": "#03eb41" }} key={index}>
                         <div className="m-box white-gray-gradient">

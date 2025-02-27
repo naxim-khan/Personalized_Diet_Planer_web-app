@@ -27,7 +27,7 @@ const Banner2 = () => {
                             initial="hidden"
                             whileInView='visible'
                             viewport={{ once: true }}
-                            className='text-3xl lg:text-5xl font-bold uppercase text-gradient'
+                            className='text-2xl lg:text-5xl font-bold uppercase text-gradient'
                         >
                             Why You'll Love this PLatform
                         </motion.h1>
@@ -36,6 +36,7 @@ const Banner2 = () => {
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true }}
+                            className='text-base sm:text-lg'
                         >
                             Lorem ipsum dolor sit, amet consectetur adipisicing elit. Veritatis quos pariatur iure neque quia vitae sed officia natus velit dolor expedita, consectetur optio a incidunt hic delectus placeat aperiam molestias ex eveniet non consequuntur? Voluptatum.
                         </motion.p>

@@ -62,7 +62,7 @@ const HowItWorks = () => {
                     initial={{ opacity: 0, x: -200 }}
                     whileInView={"visible"}
                     transition={{ duration: 1, delay: 0.3 }}
-                    className='text-lg sm:text-xl  text-center  text-gray-600 max-w-[50rem]'
+                    className='text-base sm:text-lg  text-center  text-gray-600 max-w-[50rem]'
                 >
                     A step-by-step approach to transforming your health: Sign up, share your goals, get personalized plans, and track your progress—all on one intuitive platform.
                 </motion.p>

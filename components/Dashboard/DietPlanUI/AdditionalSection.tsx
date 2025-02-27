@@ -1,7 +1,7 @@
 import { DietPlanTypes } from "../../../types/index";
 export function AdditionalSection({ dietPlan }: { dietPlan: DietPlanTypes }) {
     return (
-        <div className="grid gap-px grid-cols-2 md:grid-cols-1 lg:grid-cols-2 bg-gray-100/50 rounded-lg overflow-hidden border border-gray-200">
+        <div className="grid gap-px grid-cols-1 md:grid-cols-1 lg:grid-cols-2 bg-gray-100/50 rounded-lg overflow-hidden border border-gray-200">
             {/* Foods to Avoid */}
             {(dietPlan.foods_to_avoid ?? []).length > 0 && (
                 <div className="bg-white p-4">

@@ -37,7 +37,7 @@ const Banner = () => {
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true }}
-                            className='text-lg sm:text-xl text-gray-600 max-w-[50rem]'
+                            className='text-base sm:text-lg text-gray-600 max-w-[50rem]'
                         >
                             Our platform creates personalized diet plans tailored to your health goals, dietary preferences, and lifestyle. Whether you aim to lose weight, build muscle, or maintain a balanced diet, we provide customized meal recommendations that fit your needs. With an intelligent recipe generator and automated grocery lists, eating healthy becomes effortless. Plus, our community support keeps you motivated on your journey. Best of all, it's completely free—because good health should be accessible to everyone.
                         </motion.p>
@@ -46,7 +46,7 @@ const Banner = () => {
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true }}
-                            className='text-lg sm:text-xl text-gray-600 max-w-[50rem]'
+                            className='text-base sm:text-lg text-gray-600 max-w-[50rem]'
                         >
                             To learn more about the developers of this platform, click the button below.
                         </motion.p>

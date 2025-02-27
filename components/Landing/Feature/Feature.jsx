@@ -60,7 +60,7 @@ const Feature = () => {
                     initial={{ opacity: 0, x: -200 }}
                     whileInView={"visible"}
                     transition={{ duration: 1, delay: 0.3 }}
-                    className="text-gradient text-4xl lg:text-5xl font-bold text-center"
+                    className="text-gradient text-3xl sm:text-4xl  font-bold text-center"
                 >
                     Why Choose Us?
                 </motion.h1>
@@ -70,7 +70,7 @@ const Feature = () => {
                         initial={{ opacity: 0, x: -200 }}
                         whileInView={"visible"}
                         transition={{ duration: 1, delay: 0.3 }}
-                        className='text-lg sm:text-xl  text-center  text-gray-600 max-w-[50rem]'
+                        className='text-base px-8 sm:text-lg  text-center  text-gray-600 max-w-[50rem]'
                     >
                         A free platform offering personalized diets, smart tools, and community support to help you reach your health goals easily.
                     </motion.p>

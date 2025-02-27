@@ -2,6 +2,8 @@ import { DietPlanTypes } from "../../../types/index";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { AnimatedList } from "../../../components/magicui/animated-list";
+import { cn } from "../../lib/utils";
 
 export function OverviewSection({
     dietPlan,
@@ -55,6 +57,8 @@ export function OverviewSection({
         );
     };
 
+    // Create a sufficiently large array by repeating dietPlan.instructions multiple times
+    const largeInstructionSet = Array.from({ length: 100 }, () => dietPlan.instructions).flat();
 
     return (
         <div className="grid gap-4 md:gap-5 lg:grid-cols-2 rounded-lg bg-white sm:p-4 p-2  shadow-xs">
@@ -116,7 +120,7 @@ export function OverviewSection({
 
             {/* Guidelines Card */}
             {dietPlan.instructions && dietPlan.instructions.length > 0 && (
-                <Card className="border-0 shadow-none bg-white p-3 rounded-lg">
+                <Card className="border border-emerald-50 shadow-none bg-white p-3 rounded-lg">
                     <CardHeader className="pb-2 px-0">
                         <CardTitle className="text-lg font-semibold text-emerald-800">
                             Key Guidelines
@@ -124,22 +128,29 @@ export function OverviewSection({
                         <div className="border-b border-emerald-100 mt-2"></div>
                     </CardHeader>
 
-                    <CardContent className="p-0">
-                        <ul className="space-y-2">
-                            {dietPlan.instructions?.map((instruction, index) => (
+                    <CardContent className="relative flex h-[250px] max-h-[250px] w-full flex-col overflow-hidden p-1">
+                        <AnimatedList delay={3000} className="gap-3">
+                            {largeInstructionSet.map((instruction, index) => (
                                 <li
                                     key={index}
-                                    className="flex items-start gap-2 p-2 rounded-md bg-emerald-50/30 hover:bg-emerald-50/50 transition-colors"
+                                    className={cn(
+                                        "relative mx-auto min-h-fit w-[calc(100%-10px)]  cursor-pointer overflow-hidden rounded-lg p-3 flex gap-3 items-center  ",
+                                        // animation styles
+                                        "transition-all duration-200 ease-in-out hover:scale-[103%]",
+                                        // light styles
+                                        "bg-green-400/10 [box-shadow:0_0_0_1px_rgba(0,0,0,.02),0_1px_2px_rgba(0,0,0,.03),0_3px_7px_rgba(0,0,0,.03)]",
+                                    )}
                                 >
-                                    <div className="shrink-0 w-5 h-5 bg-emerald-500/10 text-emerald-700 text-sm rounded-full flex items-center justify-center">
-                                        {index + 1}
+                                    <div className="shrink-0 w-5 h-5 bg-emerald-500/50 text-emerald-800 text-sm rounded-full flex items-center justify-center">
+                                        {(index % (dietPlan.instructions?.length || 1)) + 1}
                                     </div>
                                     <p className="text-sm leading-snug text-gray-700">
                                         {instruction}
                                     </p>
                                 </li>
                             ))}
-                        </ul>
+                        </AnimatedList>
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-white rounded-b-lg"></div>
                     </CardContent>
                 </Card>
             )}

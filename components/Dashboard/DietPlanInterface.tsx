@@ -17,6 +17,12 @@ import { MealPlanTable } from "./DietPlanUI/MealPlanTable";
 import { OverviewSection } from "./DietPlanUI/OverviewSection";
 import { UserDetails } from "./DietPlanUI/UserDetails";
 import { AdditionalSection } from "./DietPlanUI/AdditionalSection";
+import { ImSpinner2 } from "react-icons/im";
+
+// Pointer styling
+import { Pointer } from "../magicui/pointer";
+import { motion } from "motion/react";
+import { SpinningText } from "../magicui/spinningtext";
 
 export default function DietPlanInterface({ generatePlan }: { generatePlan: (options: UserOptions) => Promise<DietPlan | { error: string }> }) {
     const [dietPlan, setDietPlan] = useState<DietPlanTypes | null>(null);
@@ -378,27 +384,18 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                 >
                     {loading && (
                         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+                            <div className=" absolute size-full flex items-center justify-center">
+                                <SpinningText reverse className="text-2xl text-green-600" duration={20} radius={10}>
+                                    Loading... •  Plz Wait  •  Usually akes 10-40 seconds
+                                </SpinningText>
+                            </div>
                             <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
-                                <div className="animate-spin mx-auto mb-4">
-                                    <svg
-                                        className="h-8 w-8 text-blue-600"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                        />
-                                    </svg>
-                                </div>
+
                                 <p className="text-gray-700 font-medium">
                                     Crafting your meal plan...
                                 </p>
                                 <p className="text-sm text-gray-500 mt-2">
-                                    This usually takes 30-50 seconds
+                                    This usually takes 10-40 seconds
                                 </p>
                             </div>
                         </div>
