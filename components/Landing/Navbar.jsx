@@ -25,9 +25,26 @@ const navItems = [
     { name: 'Our Team', href: '/team' }
 ];
 
-export default function App() {
+async function fetchUserDetails() {
+    const response = await fetch('/api/user');
+    if (response.ok) {
+        const user = await response.json();
+        return user;
+    } else {
+        throw new Error('Failed to fetch user details');
+    }
+}
+
+export default function App({ user }) {
     const [activeSection, setActiveSection] = useState('');
+    const [userData, setUserData] = useState(null);
     const pathname = usePathname();
+
+    useEffect(() => {
+        fetchUserDetails()
+            .then(data => setUserData(data))
+            .catch(error => console.error('Error fetching user details:', error));
+    }, []);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -64,8 +81,8 @@ export default function App() {
         }
 
         return (
-            <HeroLink 
-                color={isActive ? 'primary' : 'foreground'} 
+            <HeroLink
+                color={isActive ? 'primary' : 'foreground'}
                 href={item.href}
             >
                 {item.name}
@@ -99,19 +116,19 @@ export default function App() {
 
             <NavbarContent justify="end">
                 <NavbarItem className="hidden lg:flex">
-                    <Link href="/sign-in" passHref legacyBehavior>
-                        <HeroLink>Login</HeroLink>
+                    <Link href={user ? "/dashboard" : "/sign-in"} passHref legacyBehavior>
+                        <HeroLink>{user ? "Dashboard" :"Login"}</HeroLink>
                     </Link>
                 </NavbarItem>
                 <NavbarItem>
-                    <Link href="/sign-up" passHref legacyBehavior>
-                        <Button 
+                    <Link href={user ? "/dashboard" : "/sign-up"} passHref legacyBehavior>
+                        <Button
                             as="a"
-                            color="maincolor" 
-                            variant="flat" 
-                            className="bg-gradient-to-r from-maincolor to-darkgreen rounded-tl-full rounded-br-full bg-opacity-15 font-bold text-white px-5 transform hover:rotate-[-5deg] transition-transform duration-300"
+                            color="maincolor"
+                            variant="flat"
+                            className="bg-gradient-to-r from-maincolor to-darkgreen rounded-tl-full rounded-br-full bg-opacity-15 font-bold text-white px-6 transform hover:rotate-[-5deg] transition-transform duration-300 "
                         >
-                            Sign Up
+                            {user ? userData?.user?.firstName || "Sign Up" : "Sign Up"}
                         </Button>
                     </Link>
                 </NavbarItem>
@@ -124,9 +141,9 @@ export default function App() {
                     </NavbarMenuItem>
                 ))}
                 <NavbarMenuItem>
-                    <Link href="/sign-in" passHref legacyBehavior>
+                    <Link href={user ? "/dashboard" : "/sign-in"} passHref legacyBehavior>
                         <HeroLink className="w-full" color="foreground">
-                            Login
+                            {user ? "Dashboard " : "Login"}
                         </HeroLink>
                     </Link>
                 </NavbarMenuItem>

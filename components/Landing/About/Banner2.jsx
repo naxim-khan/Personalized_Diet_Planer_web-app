@@ -13,7 +13,7 @@ const bgStyle = {
     backgroundAttachment: 'fixed'
 }
 
-const Banner2 = () => {
+const Banner2 = ({user}) => {
     return (
         <section className='mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl '>
             <div style={bgStyle} className="container grid grid-cols-1 md:grid-cols-2 space-y-6 md:space-y-0 py-14 relative border border-green-300 rounded-3xl">
@@ -36,7 +36,7 @@ const Banner2 = () => {
                             initial="hidden"
                             whileInView="visible"
                             viewport={{ once: true }}
-                            className='text-base sm:text-lg'
+                            className='text-base sm:text-'
                         >
                             Lorem ipsum dolor sit, amet consectetur adipisicing elit. Veritatis quos pariatur iure neque quia vitae sed officia natus velit dolor expedita, consectetur optio a incidunt hic delectus placeat aperiam molestias ex eveniet non consequuntur? Voluptatum.
                         </motion.p>
@@ -48,9 +48,9 @@ const Banner2 = () => {
                             initial='hidden'
                             animate='visible'
                         >
-                            <Link href={'/sign-in'}>
+                            <Link href={user?'/dashboard':'/sign-in'}>
                                 <button className='primary-btn flex gap-2 items-center justify-center'>
-                                    Get Started
+                                    {user?'Go-to Dashboard':'Get Started'}
                                     <span><FaArrowRight /></span>
                                 </button>
                             </Link>

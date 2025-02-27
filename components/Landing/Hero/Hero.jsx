@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { FadeRight, FadeUp, FadeLeft } from '../../utility/animation';
 import Link from 'next/link';
 
-const Hero = () => {
+const Hero = ({user}) => {
   return (
     <section className='mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl  flex flex-col items-center justify-center mt-20 md:mt-6 ' id='home'>
       <div className='container w-full grid grid-cols-1 md:grid-cols-2 min-h-[650px] relative justify-center py-8 sm:py-2'>
@@ -50,9 +50,9 @@ const Hero = () => {
               initial='hidden'
               animate='visible'
             >
-              <Link href={'/sign-in'}>
+              <Link href={user?'/dashboard':'/sign-in'}>
                 <button className='primary-btn flex gap-2 items-center justify-center'>
-                  Get Started
+                  {user?'Go-to Dashboard':'Get Started'}
                   <span><FaArrowRight /></span>
                 </button>
               </Link>
