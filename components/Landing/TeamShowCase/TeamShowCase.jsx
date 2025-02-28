@@ -18,7 +18,7 @@ const TeamShowCase = () => {
         },
         {
             name: "Shareefa",
-            img: "./img/amn-cartoon3.png",
+            img: "./img/shareefa_Portrait.png",
             role: "UI/UX & Testing",
             content: "Creates intuitive interfaces and ensures flawless performance across all devices."
         }

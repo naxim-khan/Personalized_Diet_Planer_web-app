@@ -15,7 +15,7 @@ const Team = () => {
             name: "Shareefa",
             designation: "UI/UX & Testing",
             image:
-                "/img/nazeem.png",
+                "/img/shareefa_Portrait.png",
         },
         {
             id: 2,
