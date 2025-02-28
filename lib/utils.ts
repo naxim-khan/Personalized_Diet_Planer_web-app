@@ -21,7 +21,7 @@ export const authformSchema = (type: string) =>
     healthIssues: type === "sign-up" ? z.string() : z.never().optional(),
     fitnessGoal: type === "sign-up" ? z.enum(["Muscle Gain", "Weight Loss", "Maintenance", "Other"]) : z.never().optional(),
     activityLevel: type === "sign-up" ? z.enum(["Little to No Exercise", "Light Exercise", "Moderate Exercise", "Heavy Exercise"]) : z.never().optional(),
-    lifestyle: type === "sign-up" ? z.enum(["Non-smoker", "Smoker", "Occasional Smoker", "Other"]) : z.never().optional(),
+    lifestyle: type === "sign-up" ? z.enum(["Non-Smoker", "Smoker", "Occasional Smoker", "Other"]) : z.never().optional(),
     country: type === "sign-up" ? z.string() : z.never().optional(),
     region: type === "sign-up" ? z.string() : z.never().optional(),
     mealType: type === "sign-up" ? z.enum(["Balanced", "High Protein", "Low Carb", "Other"]) : z.never().optional(),

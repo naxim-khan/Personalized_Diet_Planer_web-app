@@ -192,18 +192,21 @@ export const FITNESS_GOALS = [
   ];
   
   export const MEAL_TYPE = [
+    { value: " ", label: "--Select Meal Type--" },
     { value: "Balanced", label: "Balanced" },
     { value: "High Protein", label: "High Protein" },
     { value: "Low Carb", label: "Low Carb" }
   ];
   
   export const PREFERRED_CUISINE = [
+    { value: " ", label: "--Select Cuisine style --" },
     { value: "Pakistani", label: "Pakistani" },
     { value: "Italian", label: "Italian" },
     { value: "Mexican", label: "Mexican" }
   ];
   
   export const COOKING_STYLE = [
+    { value: " ", label: "--Select Cooking Style--" },
     { value: "Home-Cooked", label: "Home Cooking" },
     { value: "Restaurant", label: "Resturants" },
     { value: "Takeout", label: "Takeout" },

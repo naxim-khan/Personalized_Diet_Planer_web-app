@@ -1,4 +1,4 @@
-import { PDFDownloadLink, Document, Page, View, Text, Image, StyleSheet, Font, LinearGradient } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet, Font, LinearGradient } from '@react-pdf/renderer';
 import { DietPlanTypes } from '../types/index';
 // Register Fonts
 Font.register({
