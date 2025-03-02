@@ -64,6 +64,7 @@ export default function DietPlanInterface() {
     }, []);
 
     // Polling logic
+    // Modified polling logic to fetch from database after completion
     const startPolling = useCallback((jobId: string) => {
         setJobId(jobId);
         setProcessingStatus('processing');
@@ -87,11 +88,21 @@ export default function DietPlanInterface() {
 
             try {
                 const res = await fetch(`/api/job-status?jobId=${jobId}`);
-                const { status, dietPlan } = await res.json();
+                const { status } = await res.json();
 
                 if (status === 'completed') {
                     clearInterval(pollingInterval.current!);
-                    setDietPlan(dietPlan);
+
+                    // Fetch the latest plan from database
+                    const planResponse = await fetch('/api/check-plan');
+                    const planData = await planResponse.json();
+
+                    if (planData.status === 'exists') {
+                        setDietPlan(planData.plan);
+                    } else {
+                        throw new Error("Generated plan not found");
+                    }
+
                     setProcessingStatus('completed');
                     setLoading(false);
                 } else if (status === 'failed') {
@@ -104,6 +115,7 @@ export default function DietPlanInterface() {
                 console.error("Polling error:", error);
                 setProcessingStatus('idle');
                 setLoading(false);
+                setError("Error checking plan status");
             }
         }, 3000);
     }, []);
@@ -196,12 +208,30 @@ export default function DietPlanInterface() {
         <div className="p-2 py-4 md:p-6 w-full bg-gray-50 rounded-2xl border border-gray-100 mx-auto space-y-6">
             {/* Loading overlay */}
             {loading && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+                <div className="fixed inset-0  flex items-center justify-center">
                     <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
                         <p className="text-gray-700 font-medium">Crafting your meal plan...</p>
                         <p className="text-sm text-gray-500 mt-2">This usually takes 30-60 seconds</p>
                     </div>
                 </div>
+            )}
+             {/* Error Alert with Retry Button */}
+             {error && (
+                <Alert variant="destructive" className="border-2">
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription className="flex items-center justify-between">
+                        <span>{error}</span>
+                        <Button
+                            onClick={handleGenerate}
+                            variant="outline"
+                            size="sm"
+                            className="ml-4"
+                            disabled={loading}
+                        >
+                            Try Again
+                        </Button>
+                    </AlertDescription>
+                </Alert>
             )}
 
             {/* Delete Confirmation Modal */}

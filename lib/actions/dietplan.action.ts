@@ -25,6 +25,7 @@ export type DietPlan = {
 
 const MODELS = [
     "deepseek/deepseek-r1-distill-llama-70b:free",
+    "deepseek/deepseek-r1-distill-llama-70b:free",
     "deepseek/deepseek-r1:free",
 ];
 
