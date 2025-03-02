@@ -195,10 +195,3 @@ Generate the output strictly in JSON format with proper escaping.
     return { error: "All model attempts failed. Please try again later." };
 }
 
-
-
-
-
-// =======================================
-// ======= GPT -4 MODEL =================
-// =======================================

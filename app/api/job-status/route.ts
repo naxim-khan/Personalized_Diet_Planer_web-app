@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getDB, ObjectId } from "../../../lib/db";
 
+const PROCESSING_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const jobId = searchParams.get("jobId");
 
-  // Validate jobId parameter
   if (!jobId || !ObjectId.isValid(jobId)) {
     return NextResponse.json(
       { error: "Invalid or missing job ID" },
@@ -24,6 +25,39 @@ export async function GET(req: Request) {
         { error: "Job not found" }, 
         { status: 404 }
       );
+    }
+
+    // Check for timeout if still processing
+    if (job.status === 'processing' && job.createdAt) {
+      const currentTime = new Date();
+      const createdAt = job.createdAt instanceof Date ? 
+        job.createdAt : 
+        new Date(job.createdAt);
+      
+      const elapsedTime = currentTime.getTime() - createdAt.getTime();
+
+      if (elapsedTime > PROCESSING_TIMEOUT_MS) {
+        // Update status only if still processing
+        const result = await db.collection("dietPlans").updateOne(
+          { 
+            _id: new ObjectId(jobId),
+            status: 'processing' // Atomic update filter
+          },
+          { 
+            $set: { 
+              status: 'timed-out',
+              updatedAt: new Date() 
+            } 
+          }
+        );
+
+        if (result.modifiedCount > 0) {
+          return NextResponse.json({
+            status: 'timed-out',
+            dietPlan: null
+          });
+        }
+      }
     }
 
     return NextResponse.json({
