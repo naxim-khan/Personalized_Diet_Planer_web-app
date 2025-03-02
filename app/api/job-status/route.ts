@@ -5,7 +5,6 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const jobId = searchParams.get("jobId");
 
-  // Validate jobId parameter
   if (!jobId || !ObjectId.isValid(jobId)) {
     return NextResponse.json(
       { error: "Invalid or missing job ID" },
@@ -15,9 +14,10 @@ export async function GET(req: Request) {
 
   try {
     const db = await getDB();
-    const job = await db.collection("dietPlans").findOne({
-      _id: new ObjectId(jobId)
-    });
+    const job = await db.collection("dietPlans").findOne(
+      { _id: new ObjectId(jobId) },
+      { projection: { status: 1, dietPlan: 1 } }
+    );
 
     if (!job) {
       return NextResponse.json(

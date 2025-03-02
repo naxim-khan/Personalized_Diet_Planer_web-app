@@ -7,9 +7,10 @@ export async function DELETE(
     { params }: { params: { id: string } }
 ) {
     try {
-        const user = await getLoggedInUser();
-        const { id } = params;
+        // Await the params to ensure it's resolved
+        const { id } = await params;
 
+        const user = await getLoggedInUser();
         const collection = await getDietPlansCollection();
         const objectId = new ObjectId(id);
 

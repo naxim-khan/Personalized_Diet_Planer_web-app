@@ -1,6 +1,5 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-// import { DietPlan } from "../../lib/actions/dietplan.action";
 import { DietPlanTypes } from "../../types/index";
 import { Button } from "../../components/ui/button";
 import { toPng } from 'html-to-image';
@@ -16,10 +15,6 @@ import { MealPlanTable } from "./DietPlanUI/MealPlanTable";
 import { OverviewSection } from "./DietPlanUI/OverviewSection";
 import { UserDetails } from "./DietPlanUI/UserDetails";
 import { AdditionalSection } from "./DietPlanUI/AdditionalSection";
-// import { ImSpinner2 } from "react-icons/im";
-// import { Pointer } from "../magicui/pointer";
-// import { motion } from "motion/react";
-// import { SpinningText } from "../magicui/spinningtext";
 
 export default function DietPlanInterface() {
     const [dietPlan, setDietPlan] = useState<DietPlanTypes | null>(null);
@@ -34,8 +29,8 @@ export default function DietPlanInterface() {
     const chartRef = useRef<HTMLDivElement>(null);
     const [pdfReady, setPdfReady] = useState(false);
     const [chartImage, setChartImage] = useState<string | null>(null);
-
-    // Add processing status state
+    const [isInitializing, setIsInitializing] = useState(true);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [processingStatus, setProcessingStatus] = useState<'idle' | 'pending' | 'processing' | 'completed'>('idle');
 
     // Fetch user data and check existing plans
@@ -61,6 +56,8 @@ export default function DietPlanInterface() {
             } catch (error) {
                 console.error("Initialization error:", error);
                 setError("Failed to load initial data");
+            } finally {
+                setIsInitializing(false);
             }
         };
         initializeData();
@@ -73,7 +70,7 @@ export default function DietPlanInterface() {
         setLoading(true);
 
         const startTime = Date.now();
-        const timeout = 300000; // 5 minutes
+        const timeout = 300000;
 
         if (pollingInterval.current) {
             clearInterval(pollingInterval.current);
@@ -156,19 +153,13 @@ export default function DietPlanInterface() {
                 body: JSON.stringify(mergedOptions)
             });
 
-            // Handle HTTP errors
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || "Failed to start generation");
             }
 
             const responseData = await response.json();
-
-            // Validate job ID exists
-            if (!responseData.jobId) {
-                throw new Error("Missing job ID in response");
-            }
-
+            if (!responseData.jobId) throw new Error("Missing job ID in response");
             startPolling(responseData.jobId);
         } catch (err: any) {
             setLoading(false);
@@ -180,6 +171,7 @@ export default function DietPlanInterface() {
         if (!dietPlan?._id) return;
 
         try {
+            setIsDeleting(true);
             const response = await fetch(`/api/dietplans/${dietPlan._id}`, {
                 method: "DELETE",
             });
@@ -190,10 +182,13 @@ export default function DietPlanInterface() {
             }
 
             setDietPlan(null);
+            setProcessingStatus('idle');
             setShowDeleteConfirmation(false);
         } catch (error) {
             console.error("Delete error:", error);
             setError("Failed to delete diet plan");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -202,11 +197,6 @@ export default function DietPlanInterface() {
             {/* Loading overlay */}
             {loading && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-                    {/* <div className="absolute size-full flex items-center justify-center">
-                        <SpinningText reverse className="text-2xl text-green-600" duration={20} radius={10}>
-                            Loading... • Please Wait • Usually takes 10-40 seconds
-                        </SpinningText>
-                    </div> */}
                     <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
                         <p className="text-gray-700 font-medium">Crafting your meal plan...</p>
                         <p className="text-sm text-gray-500 mt-2">This usually takes 30-60 seconds</p>
@@ -239,6 +229,7 @@ export default function DietPlanInterface() {
                                         variant="outline"
                                         onClick={() => setShowDeleteConfirmation(false)}
                                         className="px-5 hover:bg-accent/50 text-green-600 bg-green-100"
+                                        disabled={isDeleting}
                                     >
                                         Cancel
                                     </Button>
@@ -246,9 +237,24 @@ export default function DietPlanInterface() {
                                         variant="destructive"
                                         onClick={handleConfirmDelete}
                                         className="px-5 bg-destructive hover:bg-destructive/90 text-red-500 bg-red-100"
+                                        disabled={isDeleting}
                                     >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Plan
+                                        {isDeleting ? (
+                                            <svg
+                                                className="animate-spin h-5 w-5 text-white"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                            </svg>
+                                        ) : (
+                                            <>
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete Plan
+                                            </>
+                                        )}
                                     </Button>
                                 </div>
                             </div>
@@ -258,7 +264,6 @@ export default function DietPlanInterface() {
             )}
 
             {/* Control Buttons */}
-            {/* // Update control buttons section */}
             <div className="flex flex-col gap-4">
                 <div className="flex flex-row gap-4">
                     <Button
@@ -266,7 +271,7 @@ export default function DietPlanInterface() {
                         size="lg"
                         variant={dietPlan ? "destructive" : "default"}
                         className="relative w-full sm:w-auto hover:scale-105 transition-transform bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                        disabled={loading || processingStatus === 'pending' || processingStatus === 'processing'}
+                        disabled={isInitializing || loading || processingStatus === 'pending' || processingStatus === 'processing' || isDeleting}
                     >
                         <div className="flex items-center gap-2">
                             {loading ? (
@@ -282,13 +287,10 @@ export default function DietPlanInterface() {
                                     </svg>
                                     <span>Generating...</span>
                                 </>
-                            ) : (
-                                dietPlan ? "Delete Plan" : "Generate Plan"
-                            )}
+                            ) : dietPlan ? "Delete Plan" : "Generate Plan"}
                         </div>
                     </Button>
 
-                    {/* ... PDF download button remains the same */}
                     {dietPlan && (
                         <div className="relative">
                             {!pdfReady ? (
@@ -347,12 +349,6 @@ export default function DietPlanInterface() {
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
                         <span>Finalizing your personalized plan. Almost ready...</span>
-                    </div>
-                )}
-
-                {processingStatus === 'completed' && !dietPlan && (
-                    <div className="text-green-600">
-                        <span>✓ Your plan is ready! Refreshing...</span>
                     </div>
                 )}
             </div>
