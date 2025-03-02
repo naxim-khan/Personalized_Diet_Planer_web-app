@@ -1,7 +1,7 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import { DietPlan } from "../../lib/actions/dietplan.action";
-import { DietPlanTypes } from "../../types/index"
+import { useState, useRef, useEffect, useCallback } from "react";
+// import { DietPlan } from "../../lib/actions/dietplan.action";
+import { DietPlanTypes } from "../../types/index";
 import { Button } from "../../components/ui/button";
 import { toPng } from 'html-to-image';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -11,87 +11,114 @@ import { TriangleAlert } from "lucide-react";
 import { Trash2 } from "lucide-react";
 import DietPlanPDF from '../../components/DietPlanPDF';
 import { PDFDownloadLink } from '@react-pdf/renderer';
-
 import { Header } from "./DietPlanUI/Header";
 import { MealPlanTable } from "./DietPlanUI/MealPlanTable";
 import { OverviewSection } from "./DietPlanUI/OverviewSection";
 import { UserDetails } from "./DietPlanUI/UserDetails";
 import { AdditionalSection } from "./DietPlanUI/AdditionalSection";
-import { ImSpinner2 } from "react-icons/im";
+// import { ImSpinner2 } from "react-icons/im";
+// import { Pointer } from "../magicui/pointer";
+// import { motion } from "motion/react";
+// import { SpinningText } from "../magicui/spinningtext";
 
-// Pointer styling
-import { Pointer } from "../magicui/pointer";
-import { motion } from "motion/react";
-import { SpinningText } from "../magicui/spinningtext";
-
-export default function DietPlanInterface({ generatePlan }: { generatePlan: (options: UserOptions) => Promise<DietPlan | { error: string }> }) {
+export default function DietPlanInterface() {
     const [dietPlan, setDietPlan] = useState<DietPlanTypes | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [userData, setUserData] = useState<any>(null);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [jobId, setJobId] = useState<string | null>(null);
     const printRef = useRef<HTMLDivElement>(null);
-    const COLORS = ['#00ff0d', '#02a10a', '#027008']
-
-    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
-    const [localPlan, setLocalPlan] = useState<DietPlanTypes | null>(null);
-
+    const COLORS = ['#00ff0d', '#02a10a', '#027008'];
+    const pollingInterval = useRef<NodeJS.Timeout | null>(null);
     const chartRef = useRef<HTMLDivElement>(null);
     const [pdfReady, setPdfReady] = useState(false);
     const [chartImage, setChartImage] = useState<string | null>(null);
 
-    // 🟢 Fetch user data on component mount
+    // Add processing status state
+    const [processingStatus, setProcessingStatus] = useState<'idle' | 'pending' | 'processing' | 'completed'>('idle');
+
+    // Fetch user data and check existing plans
     useEffect(() => {
-        const fetchUserData = async () => {
+        const initializeData = async () => {
             try {
-                const response = await fetch('/api/user');
-                if (!response.ok) {
-                    throw new Error("Failed to fetch user data");
+                const userResponse = await fetch('/api/user');
+                if (!userResponse.ok) throw new Error("Failed to fetch user data");
+                const userData = await userResponse.json();
+                setUserData(userData);
+
+                const planResponse = await fetch('/api/check-plan');
+                const planData = await planResponse.json();
+
+                if (planData.status === 'exists') {
+                    setDietPlan(planData.plan);
+                    setProcessingStatus('completed');
+                } else if (planData.status === 'pending') {
+                    setProcessingStatus('pending');
+                    setLoading(true);
+                    startPolling(planData.jobId);
                 }
-                const data = await response.json();
-                setUserData(data); // Store user data in state
-                console.log("User data fetched:", data.user);
             } catch (error) {
-                console.error("Error fetching user data:", error);
-                setError("Failed to load user data. Using default values.");
+                console.error("Initialization error:", error);
+                setError("Failed to load initial data");
             }
         };
-
-        fetchUserData();
+        initializeData();
     }, []);
 
-    // initial load: check database first, than local storage
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                // First try database
-                const dbResponse = await fetch('/api/dietplans');
-                if (dbResponse.ok) {
-                    const dbData = await dbResponse.json();
-                    if (dbData.dietPlan) {
-                        setDietPlan(dbData.dietPlan);
-                        return;
-                    }
-                }
+    // Polling logic
+    const startPolling = useCallback((jobId: string) => {
+        setJobId(jobId);
+        setProcessingStatus('processing');
+        setLoading(true);
 
-                // Fallback to local storage
-                const localPlan = localStorage.getItem('dietPlan');
-                if (localPlan) {
-                    setLocalPlan(JSON.parse(localPlan));
-                    setError('Your plan is stored locally - click to save to cloud');
+        const startTime = Date.now();
+        const timeout = 300000; // 5 minutes
+
+        if (pollingInterval.current) {
+            clearInterval(pollingInterval.current);
+        }
+
+        pollingInterval.current = setInterval(async () => {
+            if (Date.now() - startTime > timeout) {
+                clearInterval(pollingInterval.current!);
+                setProcessingStatus('idle');
+                setError("Plan generation timed out");
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/job-status?jobId=${jobId}`);
+                const { status, dietPlan } = await res.json();
+
+                if (status === 'completed') {
+                    clearInterval(pollingInterval.current!);
+                    setDietPlan(dietPlan);
+                    setProcessingStatus('completed');
+                    setLoading(false);
+                } else if (status === 'failed') {
+                    clearInterval(pollingInterval.current!);
+                    setProcessingStatus('idle');
+                    setError("Plan generation failed");
+                    setLoading(false);
                 }
             } catch (error) {
-                console.error("Initial load error:", error);
-            } finally {
+                console.error("Polling error:", error);
+                setProcessingStatus('idle');
                 setLoading(false);
             }
-        };
-
-        fetchData();
+        }, 3000);
     }, []);
 
-    // Add proper type declarations at the top
+    // Cleanup polling
+    useEffect(() => {
+        return () => {
+            if (pollingInterval.current) {
+                clearInterval(pollingInterval.current);
+            }
+        };
+    }, []);
 
     const handleGenerate = async () => {
         if (!userData) {
@@ -123,217 +150,74 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                 avoidFoods: userData.user?.avoidFoods || "None"
             };
 
-            const result = await generatePlan(mergedOptions);
-
-            if ("error" in result) {
-                throw new Error(result.error);
-            }
-            // Try to save to database first
-            setSaveStatus('saving');
-            const saveResponse = await fetch('/api/dietplans', {
+            const response = await fetch('/api/generate-plan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(result)
+                body: JSON.stringify(mergedOptions)
             });
 
-            // if (!validateDietPlan(result)) {
-            //     throw new Error("Invalid plan structure received");
-            // }
-
-            // setDietPlan({ ...result, userId: result.userId ?? "" });
-            // localStorage.setItem("dietPlan", JSON.stringify(result));
-            if (saveResponse.ok) {
-                const savedPlan = await saveResponse.json();
-                setDietPlan(savedPlan.dietPlan);
-                localStorage.removeItem('dietPlan');
-                setSaveStatus('success');
-            } else {
-                // Fallback to local storage
-                localStorage.setItem('dietPlan', JSON.stringify(result));
-                setLocalPlan({ ...result, userId: result.userId ?? "" });
-                setSaveStatus('error');
-                setError('Failed to save to cloud - stored locally');
+            // Handle HTTP errors
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to start generation");
             }
 
+            const responseData = await response.json();
+
+            // Validate job ID exists
+            if (!responseData.jobId) {
+                throw new Error("Missing job ID in response");
+            }
+
+            startPolling(responseData.jobId);
         } catch (err: any) {
-            setSaveStatus('error');
-            setError(err.message);
-        } finally {
             setLoading(false);
-            setTimeout(() => setSaveStatus('idle'), 5000);
+            setError(err.message);
         }
     };
-
-    // save to cloud
-    const handleSaveToCloud = async () => {
-        if (!localPlan) return;
-
-        setSaveStatus('saving');
-        try {
-            const response = await fetch('/api/dietplans', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(localPlan)
-            });
-
-            if (response.ok) {
-                const savedPlan = await response.json();
-                setDietPlan(savedPlan.dietPlan);
-                localStorage.removeItem('dietPlan');
-                setLocalPlan(null);
-                setSaveStatus('success');
-            } else {
-                setSaveStatus('error');
-                setError('Failed to save to cloud. Please try again.');
-            }
-        } catch (error) {
-            setSaveStatus('error');
-            setError('Network error - plan remains in local storage');
-        }
-    };
-
-    // Diet plan validation function
-    // const validateDietPlan = (plan: any): plan is DietPlan => {
-    //     return (
-    //         plan?.daily_plan?.length > 0 &&
-    //         plan?.macronutrient_distribution &&
-    //         plan?.calories_per_day
-    //     );
-    // };
-    // useEffect(() => {
-    //     const retryStorage = async () => {
-    //         const storedPlan = localStorage.getItem("dietPlan");
-    //         if (!storedPlan) return;
-
-    //         const parsed = JSON.parse(storedPlan);
-    //         if (parsed.retryAfter && Date.now() < parsed.retryAfter) return;
-
-    //         try {
-    //             const response = await fetch(`${window.location.origin}/api/dietplans`, {
-    //                 method: "POST",
-    //                 headers: { "Content-Type": "application/json" },
-    //                 body: JSON.stringify(parsed.data),
-    //             });
-
-    //             if (response.ok) {
-    //                 localStorage.removeItem("dietPlan");
-    //                 // Refresh plan from DB
-    //                 const fetchResponse = await fetch(`${window.location.origin}/api/dietplans`);
-    //                 const dbData = await fetchResponse.json();
-    //                 if (dbData.dietPlans?.length > 0) {
-    //                     setDietPlan(dbData.dietPlans[0]);
-    //                 }
-    //             }
-    //         } catch (error) {
-    //             console.error("Retry failed:", error);
-    //             // Update retry timer
-    //             localStorage.setItem("dietPlan", JSON.stringify({
-    //                 ...parsed,
-    //                 retryAfter: Date.now() + 24 * 60 * 60 * 1000
-    //             }));
-    //         }
-    //     };
-
-    //     retryStorage();
-    // }, []);
 
     const handleConfirmDelete = async () => {
-        if (!dietPlan?._id) {
-            console.error("No diet plan ID found");
-            return;
-        }
+        if (!dietPlan?._id) return;
 
         try {
-            // console.log("Deleting diet plan with ID:", dietPlan._id);
-
-            const response = await fetch(`${window.location.origin}/api/dietplans/${dietPlan._id}`, {
+            const response = await fetch(`/api/dietplans/${dietPlan._id}`, {
                 method: "DELETE",
             });
 
-            // Log the response for debugging
-            console.log("Response status:", response.status);
-            console.log("Response headers:", response.headers);
-
             if (!response.ok) {
-                // Attempt to parse the error response
                 const errorText = await response.text();
-                console.error("API Error Response:", errorText);
-
-                // If the response is HTML, throw a custom error
-                if (errorText.startsWith("<!DOCTYPE html>")) {
-                    throw new Error("Received HTML response. Check the API endpoint.");
-                }
-
-                // If the response is JSON, parse it
-                try {
-                    const errorData = JSON.parse(errorText);
-                    throw new Error(errorData.error || "Failed to delete diet plan");
-                } catch (jsonError) {
-                    throw new Error(errorText || "Failed to delete diet plan");
-                }
+                throw new Error(errorText);
             }
 
             setDietPlan(null);
             setShowDeleteConfirmation(false);
-            localStorage.removeItem("dietPlan");
-
-            console.log("Diet plan deleted successfully");
-
         } catch (error) {
-            console.error("❌ Error deleting diet plan:", error);
-            if (error instanceof Error) {
-                setError(error.message || "Failed to delete diet plan. Please try again.");
-            } else {
-                setError("Failed to delete diet plan. Please try again.");
-            }
+            console.error("Delete error:", error);
+            setError("Failed to delete diet plan");
         }
     };
 
-
-    const handleDelete = async () => {
-        setShowDeleteConfirmation(true);
-    };
-
-
-    interface BMICalculation {
-        weight: number;
-        height: number;
-    }
-
     return (
         <div className="p-2 py-4 md:p-6 w-full bg-gray-50 rounded-2xl border border-gray-100 mx-auto space-y-6">
-
-            {/* Status Alert */}
-            {saveStatus === 'saving' && (
-                <Alert className="mb-4">
-                    ⏳ Saving your plan to cloud storage...
-                </Alert>
-            )}
-
-            {saveStatus === 'error' && (
-                <Alert variant="destructive" className="mb-4">
-                    ❌ Failed to save to cloud - using local storage
-                </Alert>
-            )}
-
-            {/* Local Storage Warning */}
-            {localPlan && (
-                <Alert className="mb-4">
-                    ⚠️ Your plan is stored locally
-                    <Button
-                        onClick={handleSaveToCloud}
-                        className="ml-4"
-                        size="sm"
-                    >
-                        Save to Cloud
-                    </Button>
-                </Alert>
+            {/* Loading overlay */}
+            {loading && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+                    {/* <div className="absolute size-full flex items-center justify-center">
+                        <SpinningText reverse className="text-2xl text-green-600" duration={20} radius={10}>
+                            Loading... • Please Wait • Usually takes 10-40 seconds
+                        </SpinningText>
+                    </div> */}
+                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+                        <p className="text-gray-700 font-medium">Crafting your meal plan...</p>
+                        <p className="text-sm text-gray-500 mt-2">This usually takes 30-60 seconds</p>
+                    </div>
+                </div>
             )}
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirmation && (
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-                    <Card className=" bg-white border-gray-200  animate-in fade-in-90 zoom-in-95 w-full max-w-md border-0 shadow-xl">
+                    <Card className="bg-white border-gray-200 animate-in fade-in-90 zoom-in-95 w-full max-w-md border-0 shadow-xl">
                         <CardHeader className="pb-4">
                             <div className="flex items-center gap-3">
                                 <div className="bg-destructive/10 p-2 rounded-full">
@@ -374,108 +258,101 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
             )}
 
             {/* Control Buttons */}
-            <div className="flex flex-row gap-4">
-                <Button
-                    onClick={dietPlan ? handleDelete : handleGenerate}
-                    size="lg"
-                    variant={dietPlan ? "destructive" : "default"}
-                    className="relative w-full sm:w-auto hover:scale-105 transition-transform bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                    disabled={loading}
-                >
-                    {loading && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-                            <div className=" absolute size-full flex items-center justify-center">
-                                <SpinningText reverse className="text-2xl text-green-600" duration={20} radius={10}>
-                                    Loading... •  Plz Wait  •  Usually akes 10-40 seconds
-                                </SpinningText>
-                            </div>
-                            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
+            {/* // Update control buttons section */}
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-row gap-4">
+                    <Button
+                        onClick={dietPlan ? () => setShowDeleteConfirmation(true) : handleGenerate}
+                        size="lg"
+                        variant={dietPlan ? "destructive" : "default"}
+                        className="relative w-full sm:w-auto hover:scale-105 transition-transform bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                        disabled={loading || processingStatus === 'pending' || processingStatus === 'processing'}
+                    >
+                        <div className="flex items-center gap-2">
+                            {loading ? (
+                                <>
+                                    <svg
+                                        className="animate-spin h-5 w-5 text-white"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    <span>Generating...</span>
+                                </>
+                            ) : (
+                                dietPlan ? "Delete Plan" : "Generate Plan"
+                            )}
+                        </div>
+                    </Button>
 
-                                <p className="text-gray-700 font-medium">
-                                    Crafting your meal plan...
-                                </p>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    This usually takes 10-40 seconds
-                                </p>
-                            </div>
+                    {/* ... PDF download button remains the same */}
+                    {dietPlan && (
+                        <div className="relative">
+                            {!pdfReady ? (
+                                <Button
+                                    onClick={async () => {
+                                        try {
+                                            const chartUrl = await toPng(chartRef.current!);
+                                            setChartImage(chartUrl);
+                                            setPdfReady(true);
+                                        } catch (error) {
+                                            console.error('Error generating PDF:', error);
+                                        }
+                                    }}
+                                    variant="outline"
+                                    size="lg"
+                                    className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-gradient-green text-white rounded-tl-full rounded-br-full rounded-tr-none rounded-bl-none hover:scale-105 transition-transform"
+                                >
+                                    Download PDF
+                                </Button>
+                            ) : (
+                                <PDFDownloadLink
+                                    document={<DietPlanPDF userData={userData} dietPlan={dietPlan} chartImage={chartImage!} />}
+                                    fileName="diet-plan.pdf"
+                                >
+                                    {({ loading }) => (
+                                        <Button
+                                            variant="outline"
+                                            size="lg"
+                                            disabled={loading}
+                                            className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-gradient-green text-white rounded-tl-full rounded-br-full rounded-tr-none rounded-bl-none hover:scale-105 transition-transform"
+                                        >
+                                            {loading ? 'Generating...' : 'Download Now'}
+                                        </Button>
+                                    )}
+                                </PDFDownloadLink>
+                            )}
                         </div>
                     )}
+                </div>
 
-                    <div className="flex items-center gap-2">
-                        {loading ? (
-                            <>
-                                <svg
-                                    className="animate-spin h-5 w-5 text-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                    />
-                                    <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    />
-                                </svg>
-                                <span>Generating...</span>
-                            </>
-                        ) : (
-                            dietPlan ? "Delete Plan" : "Generate Plan"
-                        )}
+                {/* Status Messages */}
+                {processingStatus === 'pending' && (
+                    <div className="flex items-center gap-2 text-blue-600">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span>Your plan is being prepared. Please wait...</span>
                     </div>
-                </Button>
+                )}
 
+                {processingStatus === 'processing' && (
+                    <div className="flex items-center gap-2 text-blue-600">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span>Finalizing your personalized plan. Almost ready...</span>
+                    </div>
+                )}
 
-                {dietPlan && (
-                    <div className="relative">
-                        {!pdfReady ? (
-                            <Button
-                                onClick={async () => {
-                                    try {
-                                        const chartUrl = await toPng(chartRef.current!);
-                                        setChartImage(chartUrl);
-                                        setPdfReady(true);
-                                    } catch (error) {
-                                        console.error('Error generating PDF:', error);
-                                    }
-                                }}
-                                variant="outline"
-                                size="lg"
-                                className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-gradient-green text-white rounded-tl-full rounded-br-full rounded-tr-none rounded-bl-none hover:scale-105 transition-transform"
-                            >
-                                Download PDF
-                            </Button>
-                        ) : (
-                            <PDFDownloadLink
-                                document={
-                                    <DietPlanPDF
-                                        userData={userData}
-                                        dietPlan={dietPlan}
-                                        chartImage={chartImage!}
-                                    />
-                                }
-                                fileName="diet-plan.pdf"
-                                className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-gradient-green text-white rounded-tl-full rounded-br-full rounded-tr-none rounded-bl-none hover:scale-105 transition-transform"
-                            >
-                                {({ loading }) => (
-                                    <Button
-                                        variant="outline"
-                                        size="lg"
-                                        disabled={loading}
-                                        className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 bg-gradient-green text-white rounded-tl-full rounded-br-full rounded-tr-none rounded-bl-none hover:scale-105 transition-transform"
-                                    >
-                                        {loading ? 'Generating...' : 'Download Now'}
-                                    </Button>
-                                )}
-                            </PDFDownloadLink>
-                        )}
+                {processingStatus === 'completed' && !dietPlan && (
+                    <div className="text-green-600">
+                        <span>✓ Your plan is ready! Refreshing...</span>
                     </div>
                 )}
             </div>
@@ -488,7 +365,7 @@ export default function DietPlanInterface({ generatePlan }: { generatePlan: (opt
                 </Alert>
             )}
 
-            {/* Diet Plan UI Interface */}
+            {/* Diet Plan Display */}
             {dietPlan && (
                 <div ref={printRef} className="space-y-4">
                     <Header userData={userData} />

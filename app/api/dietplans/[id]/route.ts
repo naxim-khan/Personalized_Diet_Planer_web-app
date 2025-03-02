@@ -1,78 +1,40 @@
 import { NextResponse } from "next/server";
 import { getLoggedInUser } from "../../../../lib/actions/users.action";
-import { MongoClient, ObjectId } from "mongodb";
-
-const client = new MongoClient(process.env.MONGODB_URI!);
-let dbConnected = false;
-
-async function getDietPlansCollection() {
-    if (!dbConnected) {
-        await client.connect();
-        dbConnected = true;
-    }
-    return client.db().collection("dietPlans");
-}
+import { getDietPlansCollection, ObjectId } from "../../../../lib/db";
 
 export async function DELETE(
     request: Request,
     { params }: { params: { id: string } }
 ) {
     try {
-        // Await params to ensure it's resolved
-        const { id } = await params;
+        const user = await getLoggedInUser();
+        const { id } = params;
 
-        const loggedInUser = await getLoggedInUser();
-        if (!loggedInUser) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const dietPlansCollection = await getDietPlansCollection();
-
-        console.log("Received ID:", id);
+        const collection = await getDietPlansCollection();
         const objectId = new ObjectId(id);
-        console.log("Converted to ObjectId:", objectId);
 
-        // Verify document exists
-        const existingPlan = await dietPlansCollection.findOne({
+        const existingPlan = await collection.findOne({
             _id: objectId,
-            userId: loggedInUser.$id
+            userId: user.$id, 
         });
 
         if (!existingPlan) {
-            console.log("Document not found with criteria:", {
-                _id: objectId,
-                userId: loggedInUser.$id
-            });
-            return NextResponse.json(
-                { error: "Diet plan not found" },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Diet plan not found" }, { status: 404 });
         }
 
-        const result = await dietPlansCollection.deleteOne({
+        const result = await collection.deleteOne({
             _id: objectId,
-            userId: loggedInUser.$id
+            userId: user.$id, 
         });
-
-        console.log("Delete result:", result);
 
         if (result.deletedCount === 0) {
-            return NextResponse.json(
-                { error: "Failed to delete diet plan" },
-                { status: 500 }
-            );
+            return NextResponse.json({ error: "Failed to delete diet plan" }, { status: 500 });
         }
 
-        return NextResponse.json({
-            success: true,
-            message: "Diet plan deleted successfully",
-        });
+        return NextResponse.json({ success: true, message: "Diet plan deleted" });
 
     } catch (error) {
         console.error("❌ Error deleting diet plan:", error);
-        return NextResponse.json(
-            { error: "Failed to delete diet plan" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to delete diet plan" }, { status: 500 });
     }
 }
