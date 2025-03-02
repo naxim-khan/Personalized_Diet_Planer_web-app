@@ -39,55 +39,94 @@ export async function generateDietPlan(userOptions: UserOptions): Promise<any> {
     }
 
     const strictPrompt = `
-    Generate a personalized diet plan for ${userOptions.preferredTimeSpan} days in strict JSON format. 
-    Follow this exact structure:
-      {
-      "calories_per_day": number,
-      "macronutrient_distribution": {
-      "protein": "Xg",
-      "carbohydrates": "Yg",
-      "fats": "Zg"
-      },
-      "daily_plan": [
-      {
+Generate a personalized diet plan for ${userOptions.preferredTimeSpan} days in strict JSON format, following this exact structure:
+
+{
+  "calories_per_day": number,
+  "macronutrient_distribution": {
+    "protein": "Xg",
+    "carbohydrates": "Yg",
+    "fats": "Zg"
+  },
+  "daily_plan": [
+    {
       "day": number,
       "breakfast": [{ "meal": string, "ingredients": string[] }],
       "lunch": [{ "meal": string, "ingredients": string[] }],
       "snacks": [{ "meal": string, "ingredients": string[] }],
       "dinner": [{ "meal": string, "ingredients": string[] }]
-      }
-      ],
-      "alternatives": [{ "original": string, "alternatives": string[] }],
-      "foods_to_avoid": string[],
-      "instructions": string[],
-      "all_ingredients": string[]
-      }
-      
-      User Profile:
-      
-      Age: ${userOptions.age}
-      Weight: ${userOptions.weight} kg
-      Height: ${userOptions.height} cm
-      Gender: ${userOptions.gender}
-      Dietary Restrictions: ${userOptions.dietaryRestrictions}
-      Health Issues: ${userOptions.healthIssues}
-      Fitness Goal: ${userOptions.fitnessGoal}
-      Activity Level: ${userOptions.activityLevel}
-      Meal Type: ${userOptions.mealType}
-      Preferred Cuisine: ${userOptions.preferredCuisine}
-      Cooking Style: ${userOptions.cookingStyle}
-      
-      Rules:
-      1. Strict JSON output only. No markdown, no extra text.
-      2. Validate JSON syntax before responding.
-      3. Include all required fields without missing data.
-      4. Format numbers with units (e.g., "150g").
-      5. Ensure ingredients match the user’s region: ${userOptions.region}, ${userOptions.country}.
-      6. Prioritize nutrient-dense and healthy options.
-      7. Avoid excessive sugars, unhealthy fats, and processed foods.
-      8. Make the meal plan realistic and easy to prepare based on the user’s cooking style.
-      9. Meals must be budget-friendly and not use expensive or hard-to-find ingredients.
-    `.replace(/^\s+/gm, "");
+    }
+  ],
+  "alternatives": [{ "original": string, "alternatives": string[] }],
+  "foods_to_avoid": string[],
+  "instructions": string[],
+  "all_ingredients": string[]
+}
+
+User Profile:
+- Age: ${userOptions.age}
+- Weight: ${userOptions.weight} kg
+- Height: ${userOptions.height} cm
+- Gender: ${userOptions.gender}
+- Dietary Restrictions: ${userOptions.dietaryRestrictions}
+- Health Issues: ${userOptions.healthIssues}
+- Fitness Goal: ${userOptions.fitnessGoal}
+- Activity Level: ${userOptions.activityLevel}
+- Meal Type: ${userOptions.mealType}
+- Preferred Cuisine: ${userOptions.preferredCuisine}
+- Cooking Style: ${userOptions.cookingStyle}
+- Region: ${userOptions.region}
+- Country: ${userOptions.country}
+
+1. Caloric and Macronutrient Calculation
+   - Use the Mifflin-St Jeor Equation for Basal Metabolic Rate (BMR)
+     - Males: (10 × weight) + (6.25 × height) - (5 × age) + 5
+     - Females: (10 × weight) + (6.25 × height) - (5 × age) - 161
+   - Calculate Total Daily Energy Expenditure (TDEE) using the activity level multiplier: ${userOptions.activityLevel} (1.2 to 1.9)
+   - Adjust calories based on the fitness goal
+     - Weight Loss: TDEE × 0.85 (15% deficit)
+     - Muscle Gain: TDEE × 1.15 (15% surplus)
+
+   - Macronutrient Distribution:
+     - Protein: 1.2-2.2g per kg body weight
+     - Carbohydrates: 45-65% of remaining calories
+     - Fats: 20-35% of remaining calories
+     - Special adjustments for health issues: ${userOptions.healthIssues}
+
+2. Meal Composition and Dietary Compliance
+   - Follow the structure of ${userOptions.mealType} meals while incorporating ${userOptions.preferredCuisine} flavors
+   - Meals should be balanced, nutrient-dense, and culturally relevant
+   - Include at least three variations per meal type to prevent repetition
+   - Validate ingredients against dietary restrictions: ${userOptions.dietaryRestrictions}
+   - Avoid allergens or restricted foods
+   - Include five staple ingredients from ${userOptions.region}
+
+3. Cooking and Ingredient Optimization
+   - Optimize meals based on ${userOptions.cookingStyle}
+     - Minimal preparation for busy schedules
+     - Batch cooking options if practical
+     - Simple, cost-effective meals
+   - Ensure ingredient availability in ${userOptions.country}
+
+4. Output Requirements
+   - Strict JSON format with no extra text or missing fields
+   - Use metric units only (grams, liters, etc.)
+   - Ensure daily total calories and macros stay within ±5% of the target
+   - Sort all ingredients alphabetically
+   - Provide meal alternatives for variety
+   - Generate a structured shopping list (all_ingredients)
+
+5. Validation and Critical Thinking
+   - Ensure accurate TDEE calculation aligned with ${userOptions.fitnessGoal}
+   - Ensure the macro split meets daily energy needs
+   - Create meal diversity while following dietary restrictions
+   - Optimize meals for taste, efficiency, and ease of cooking
+   - Ensure sufficient micronutrient intake for health concerns
+   - Provide a structured, cost-effective shopping list
+
+Generate the output strictly in JSON format with proper escaping.
+`.replace(/^\s+/gm, "");
+
 
     for (const model of MODELS) {
         try {
