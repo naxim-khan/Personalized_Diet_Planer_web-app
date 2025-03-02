@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDB, ObjectId } from "../../../lib/db";
 
-const PROCESSING_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+const PROCESSING_TIMEOUT_MS = 1.5 * 60 * 1000; // 1 minute 30 seconds
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
