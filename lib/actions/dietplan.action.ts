@@ -97,6 +97,8 @@ User Profile:
 2. Meal Composition and Dietary Compliance
    - Follow the structure of ${userOptions.mealType} meals while incorporating ${userOptions.preferredCuisine} flavors
    - Validate ingredients against dietary restrictions: ${userOptions.dietaryRestrictions}
+   - Meals should be balanced, nutrient-dense, and culturally relevant
+   - Include at least three variations per meal type to prevent repetition
    - Avoid allergens or restricted foods
 
 3. Cooking and Ingredient Optimization
