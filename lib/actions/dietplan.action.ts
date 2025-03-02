@@ -24,7 +24,7 @@ export type DietPlan = {
 };
 
 const MODELS = [
-    "deepseek/deepseek-r1-distill-llama-70b:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
     "deepseek/deepseek-r1-distill-llama-70b:free",
     "deepseek/deepseek-r1:free",
 ];
@@ -156,3 +156,11 @@ export async function generateDietPlan(userOptions: UserOptions): Promise<any> {
 
     return { error: "All model attempts failed. Please try again later." };
 }
+
+
+
+
+
+// =======================================
+// ======= GPT -4 MODEL =================
+// =======================================
