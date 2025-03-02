@@ -39,49 +39,54 @@ export async function generateDietPlan(userOptions: UserOptions): Promise<any> {
     }
 
     const strictPrompt = `
-    Generate a ${userOptions.preferredTimeSpan}-day personalized diet plan in STRICT JSON FORMAT.
-    Follow EXACTLY this structure:
-    
-    {
-        "calories_per_day": number,
-        "macronutrient_distribution": {
-            "protein": "Xg",
-            "carbohydrates": "Yg",
-            "fats": "Zg"
-        },
-        "daily_plan": [{
-            "day": number,
-            "breakfast": [{ "meal": string, "ingredients": string[] }],
-            "lunch": [{ "meal": string, "ingredients": string[] }],
-            "snacks": [{ "meal": string, "ingredients": string[] }],
-            "dinner": [{ "meal": string, "ingredients": string[] }]
-        }],
-        "alternatives": [{ "original": string, "alternatives": string[] }],
-        "foods_to_avoid": string[],
-        "instructions": string[],
-        "all_ingredients": string[]
-    }
-
-    User Profile:
-    - Age: ${userOptions.age}
-    - Weight: ${userOptions.weight} kg
-    - Height: ${userOptions.height} cm
-    - Gender: ${userOptions.gender}
-    - Dietary Restrictions: ${userOptions.dietaryRestrictions}
-    - Health Issues: ${userOptions.healthIssues}
-    - Fitness Goal: ${userOptions.fitnessGoal}
-    - Activity Level:${userOptions.activityLevel}
-    - Meal Type: ${userOptions.mealType}
-    - Preferred Cuisine: ${userOptions.preferredCuisine}
-    - Cooking Style: ${userOptions.cookingStyle}
-
-    RULES:
-    1. STRICT JSON ONLY - NO MARKDOWN, NO EXTRA TEXT
-    2. Validate JSON syntax before responding
-    3. Include ALL required fields
-    4. Format numbers as strings with units (e.g., "150g")
-    5. Generate COMPLETE JSON - no truncated responses
-    6. Ensure ingredients match the user's region: ${userOptions.region}, ${userOptions.country}
+    Generate a personalized diet plan for ${userOptions.preferredTimeSpan} days in strict JSON format. 
+    Follow this exact structure:
+      {
+      "calories_per_day": number,
+      "macronutrient_distribution": {
+      "protein": "Xg",
+      "carbohydrates": "Yg",
+      "fats": "Zg"
+      },
+      "daily_plan": [
+      {
+      "day": number,
+      "breakfast": [{ "meal": string, "ingredients": string[] }],
+      "lunch": [{ "meal": string, "ingredients": string[] }],
+      "snacks": [{ "meal": string, "ingredients": string[] }],
+      "dinner": [{ "meal": string, "ingredients": string[] }]
+      }
+      ],
+      "alternatives": [{ "original": string, "alternatives": string[] }],
+      "foods_to_avoid": string[],
+      "instructions": string[],
+      "all_ingredients": string[]
+      }
+      
+      User Profile:
+      
+      Age: ${userOptions.age}
+      Weight: ${userOptions.weight} kg
+      Height: ${userOptions.height} cm
+      Gender: ${userOptions.gender}
+      Dietary Restrictions: ${userOptions.dietaryRestrictions}
+      Health Issues: ${userOptions.healthIssues}
+      Fitness Goal: ${userOptions.fitnessGoal}
+      Activity Level: ${userOptions.activityLevel}
+      Meal Type: ${userOptions.mealType}
+      Preferred Cuisine: ${userOptions.preferredCuisine}
+      Cooking Style: ${userOptions.cookingStyle}
+      
+      Rules:
+      1. Strict JSON output only. No markdown, no extra text.
+      2. Validate JSON syntax before responding.
+      3. Include all required fields without missing data.
+      4. Format numbers with units (e.g., "150g").
+      5. Ensure ingredients match the user’s region: ${userOptions.region}, ${userOptions.country}.
+      6. Prioritize nutrient-dense and healthy options.
+      7. Avoid excessive sugars, unhealthy fats, and processed foods.
+      8. Make the meal plan realistic and easy to prepare based on the user’s cooking style.
+      9. Meals must be budget-friendly and not use expensive or hard-to-find ingredients.
     `.replace(/^\s+/gm, "");
 
     for (const model of MODELS) {
@@ -113,7 +118,7 @@ export async function generateDietPlan(userOptions: UserOptions): Promise<any> {
             try {
                 const apiResponse = JSON.parse(rawResponse);
                 const content = apiResponse.choices[0]?.message?.content;
-                
+
                 if (!content) {
                     console.error("No content in response from", model);
                     continue;
@@ -134,7 +139,7 @@ export async function generateDietPlan(userOptions: UserOptions): Promise<any> {
                 }
 
                 const dietPlan = JSON.parse(cleanedContent);
-                
+
                 // Validate required fields
                 if (!dietPlan.daily_plan || !dietPlan.macronutrient_distribution) {
                     console.error("Missing required fields in response");
