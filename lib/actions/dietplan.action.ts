@@ -25,6 +25,7 @@ export type DietPlan = {
 
 const MODELS = [
     "meta-llama/llama-3.3-70b-instruct:free",
+    "meta-llama/llama-3.2-11b-vision-instruct:free",
     "deepseek/deepseek-r1-distill-llama-70b:free",
     "deepseek/deepseek-r1:free",
 ];
@@ -95,17 +96,12 @@ User Profile:
 
 2. Meal Composition and Dietary Compliance
    - Follow the structure of ${userOptions.mealType} meals while incorporating ${userOptions.preferredCuisine} flavors
-   - Meals should be balanced, nutrient-dense, and culturally relevant
-   - Include at least three variations per meal type to prevent repetition
    - Validate ingredients against dietary restrictions: ${userOptions.dietaryRestrictions}
    - Avoid allergens or restricted foods
-   - Include five staple ingredients from ${userOptions.region}
 
 3. Cooking and Ingredient Optimization
    - Optimize meals based on ${userOptions.cookingStyle}
-     - Minimal preparation for busy schedules
-     - Batch cooking options if practical
-     - Simple, cost-effective meals
+   - Simple, cost-effective meals
    - Ensure ingredient availability in ${userOptions.country}
 
 4. Output Requirements
@@ -113,8 +109,6 @@ User Profile:
    - Use metric units only (grams, liters, etc.)
    - Ensure daily total calories and macros stay within ±5% of the target
    - Sort all ingredients alphabetically
-   - Provide meal alternatives for variety
-   - Generate a structured shopping list (all_ingredients)
 
 5. Validation and Critical Thinking
    - Ensure accurate TDEE calculation aligned with ${userOptions.fitnessGoal}
