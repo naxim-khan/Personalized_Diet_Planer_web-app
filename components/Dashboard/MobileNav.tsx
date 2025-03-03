@@ -54,7 +54,7 @@ const MobileNav = ({ user }: MobileNavProps) => {
 
                     <div className='mobilenav-sheet'>
                         <SheetClose asChild>
-                            <nav className='flex  flex-col gap-3 pt-16 text-white'>
+                            <nav className='flex  flex-col gap-3 pt-10 text-white'>
                                 {sidebarLinks.map((item) => {
                                     const isActive = normalizePath(pathname) === normalizePath(item.route);
                                     return (

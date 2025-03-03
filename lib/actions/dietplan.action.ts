@@ -1,5 +1,6 @@
 "use server";
 import { UserOptions } from "../../types/dietPlan";
+import OpenAI from 'openai';
 
 export type DietPlan = {
     _id?: string;
@@ -22,6 +23,8 @@ export type DietPlan = {
     instructions?: string[];
     all_ingredients?: string[];
 };
+
+
 
 const MODELS = [
     "meta-llama/llama-3.3-70b-instruct:free",
@@ -98,7 +101,8 @@ User Profile:
    - Follow the structure of ${userOptions.mealType} meals while incorporating ${userOptions.preferredCuisine} flavors
    - Validate ingredients against dietary restrictions: ${userOptions.dietaryRestrictions}
    - Meals should be balanced, nutrient-dense, and culturally relevant
-   - Include at least three variations per meal type to prevent repetition
+   - prevent repetition
+   - Include five staple ingredients from ${userOptions.region}
    - Avoid allergens or restricted foods
 
 3. Cooking and Ingredient Optimization
@@ -123,6 +127,135 @@ User Profile:
 Generate the output strictly in JSON format with proper escaping.
 `.replace(/^\s+/gm, "");
 
+    const GPT4_PROMPT = `
+    Generate a personalized diet plan for ${userOptions.preferredTimeSpan} days in strict JSON format, following this exact structure:
+    {
+      "calories_per_day": number,
+      "macronutrient_distribution": {
+        "protein": "Xg",
+        "carbohydrates": "Yg",
+        "fats": "Zg"
+      },
+      "daily_plan": [
+        {
+          "day": number,
+          "breakfast": [{ "meal": string, "ingredients": string[] }],
+          "lunch": [{ "meal": string, "ingredients": string[] }],
+          "snacks": [{ "meal": string, "ingredients": string[] }],
+          "dinner": [{ "meal": string, "ingredients": string[] }]
+        }
+      ],
+      "alternatives": [{ "original": string, "alternatives": string[] }],
+      "foods_to_avoid": string[],
+      "instructions": string[],
+      "all_ingredients": string[]
+    }
+
+    User Profile:
+    Age: ${userOptions.age} years  
+    Weight: ${userOptions.weight} kg  
+    Height: ${userOptions.height} cm  
+    Gender: ${userOptions.gender}  
+    Dietary Restrictions: ${userOptions.dietaryRestrictions}  
+    Health Issues: ${userOptions.healthIssues}  
+    Fitness Goal: ${userOptions.fitnessGoal}  
+    Activity Level: ${userOptions.activityLevel} (1.2 to 1.9)  
+    Meal Type: ${userOptions.mealType}  
+    Preferred Cuisine: ${userOptions.preferredCuisine}  
+    Cooking Style: ${userOptions.cookingStyle}  
+    Region: ${userOptions.region}  
+    Country: ${userOptions.country}  
+
+    1. Caloric and Macronutrient Calculation  
+    - Use the Mifflin-St Jeor Equation for Basal Metabolic Rate  
+      - Male: (10 × weight) + (6.25 × height) - (5 × age) + 5  
+      - Female: (10 × weight) + (6.25 × height) - (5 × age) - 161  
+    - Calculate Total Daily Energy Expenditure by multiplying BMR with the activity level  
+    - Adjust calorie intake based on the fitness goal  
+      - Weight Loss: TDEE × 0.85 (15 percent deficit)  
+      - Muscle Gain: TDEE × 1.15 (15 percent surplus)  
+    - Macronutrient Distribution  
+      - Protein: 1.2-2.2 grams per kilogram of body weight  
+      - Carbohydrates: 45-65 percent of remaining calories  
+      - Fats: 20-35 percent of remaining calories  
+      - Adjust for health concerns as necessary  
+
+    2. Meal Planning Guidelines  
+    - Meals should align with the selected meal type and preferred cuisine  
+    - Provide at least three variations per meal type to prevent repetition  
+    - Exclude ingredients restricted by dietary restrictions and avoid allergens  
+    - Ensure meals include staple ingredients from the specified region  
+    - Meals must be balanced, nutrient-dense, and culturally relevant  
+
+    3. Cooking and Ingredient Optimization  
+    - Optimize meal plans based on the specified cooking style  
+    - Allow for minimal preparation and batch cooking options where applicable  
+    - Ensure ingredients are available in the specified country  
+
+    4. Output Requirements  
+    - The response must be in strict JSON format with no extra text or missing fields  
+    - Use metric units only, such as grams and liters  
+    - Ensure daily calorie and macronutrient values remain within 5 percent of the target  
+    - Sort all ingredients alphabetically  
+
+    5. Validation and Quality Control  
+    - Verify accuracy in caloric and macronutrient calculations based on the fitness goal  
+    - Ensure dietary restriction compliance  
+    - Maintain meal variety, taste, and cost-effectiveness  
+    - Generate a structured and practical shopping list  
+
+    Generate the output strictly in JSON format with proper escaping.
+    `.replace(/^\s+/gm, "");
+
+    // First try GPT model with custom configuration
+    try {
+
+        const gpt4Api = process.env.GPT4_API_KEY;
+        if (!gpt4Api) {
+            console.error("GPT-4 api key missing...!")
+            // return { error: 'server configuration error. Please contact support.' }
+        }
+
+        const gptClient = new OpenAI({
+            apiKey: gpt4Api,
+            baseURL: "https://models.inference.ai.azure.com",
+        });
+
+        const chatCompletion = await gptClient.chat.completions.create({
+            messages: [{ role: 'user', content: GPT4_PROMPT }],
+            model: 'gpt-4o',
+            response_format: { type: "json_object" },
+            temperature: 0.7,
+            max_tokens: 4096,
+            top_p: 0.9
+        });
+
+        const content = chatCompletion.choices[0]?.message?.content || "";
+
+        // Enhanced JSON cleaning
+        const cleanedContent = content
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .replace(/(\r\n|\n|\r)/gm, "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        if (!cleanedContent.startsWith("{") || !cleanedContent.endsWith("}")) {
+            throw new Error("Invalid JSON boundaries in GPT response");
+        }
+
+        const dietPlan = JSON.parse(cleanedContent);
+
+        if (!dietPlan.daily_plan || !dietPlan.macronutrient_distribution) {
+            throw new Error("Missing required fields in GPT response");
+        }
+
+        console.log("✅ GPT-generated Diet Plan:", JSON.stringify(dietPlan, null, 2));
+        return dietPlan;
+
+    } catch (gptError) {
+        console.error("GPT model fail error:", gptError);
+    }
 
     for (const model of MODELS) {
         try {
