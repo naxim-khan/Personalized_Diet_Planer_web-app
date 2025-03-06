@@ -1,6 +1,5 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-
 import { cn } from "../../lib/utils";
 import { BentoGrid, BentoGridItem } from "../../ui/bento-grid";
 import {
@@ -12,8 +11,25 @@ import {
 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { UserDetails } from '../DietPlanUI/UserDetails';
 import { AnimatedList } from "../../../components/magicui/animated-list";
+import Link from 'next/link';
+// Default data structure to prevent null errors
+const defaultDummyData = {
+  mealPlan: {
+    today: {
+      breakfast: { name: 'No meal planned', calories: 0, ingredients: [] },
+      lunch: { name: 'No meal planned', calories: 0, ingredients: [] },
+      dinner: { name: 'No meal planned', calories: 0, ingredients: [] },
+    }
+  },
+  nutrition: {
+    targetCalories: 2000,
+    consumed: 0,
+    macros: { protein: 0, carbs: 0, fats: 0 },
+    water: 0
+  },
+  groceryList: []
+};
 
 const SkeletonOne = ({ mealPlan }) => {
   const variants = {
@@ -21,14 +37,13 @@ const SkeletonOne = ({ mealPlan }) => {
     animate: { x: 10, rotate: 5, transition: { duration: 0.2 } },
   };
 
-  // Convert mealPlan.today object into an array and repeat it 100 times
   const mealEntries = Object.entries(mealPlan.today);
   const largeInstructionSet = Array.from({ length: 100 }, () => mealEntries).flat();
-  console.log("skeletondata; ", mealPlan.today)
+
   return (
     <motion.div
       initial="initial"
-      className="relative flex flex-1 w-full max-h-[10rem] sm:max-h-[15rem] min-h-[6rem]  flex-col space-y-2 overflow-hidden"
+      className="relative flex flex-1 w-full max-h-[10rem] sm:max-h-[15rem] min-h-[6rem] flex-col space-y-2 overflow-hidden"
     >
       <AnimatedList delay={4000} className="gap-3">
         {largeInstructionSet.map(([mealType, details], index) => (
@@ -37,22 +52,17 @@ const SkeletonOne = ({ mealPlan }) => {
             variants={variants}
             className="relative mx-auto min-h-fit w-[calc(100%-10px)] cursor-pointer transition-all duration-200 ease-in-out hover:scale-[103%]"
           >
-            <div className="flex flex-col rounded-lg border border-neutral-100 dark:border-white/[0.2]  bg-white dark:bg-black">
-              {/* Meal Category Name (e.g., Breakfast, Lunch, Dinner) */}
-              <span className="uppercase text-xs font-bold  dark:text-gray-300 mb-1 h-full w-full py-2 flex items-center justify-center rounded-t-lg bg-gradient-to-l from-green-500 to-green-200 text-white">
+            <div className="flex flex-col rounded-lg border border-neutral-100 dark:border-white/[0.2] bg-white dark:bg-black">
+              <span className="uppercase text-xs font-bold dark:text-gray-300 mb-1 h-full w-full py-2 flex items-center justify-center rounded-t-lg bg-gradient-to-l from-green-500 to-green-200 text-white">
                 {mealType}
               </span>
-
               <div className='py-2 px-2'>
-                {/* Meal Header */}
-                <div className="flex justify-between items-center ">
+                <div className="flex justify-between items-center">
                   <span className="capitalize font-semibold text-md">{details.name}</span>
                   <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
                     {details.calories || "N/A"} kcal
                   </span>
                 </div>
-
-                {/* Ingredients List */}
                 <ul className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-1">
                   {details.ingredients?.map((ingredient, i) => (
                     <li key={i} className="before:content-['•'] before:mr-1 px-2 rounded-lg bg-green-600 text-white flex items-center justify-center">
@@ -69,7 +79,6 @@ const SkeletonOne = ({ mealPlan }) => {
     </motion.div>
   );
 };
-
 
 const SkeletonTwo = ({ nutrition }) => {
   const variants = {
@@ -177,10 +186,10 @@ const SkeletonFour = ({ healthGoals, recipes }) => {
             <div className="absolute inset-0 bg-gradient-to-b from-green-800 to-green-400 flex items-end justify-center ">
               <Image
                 src={'/img/nazeem.png'}
-                alt='png'
+                alt='recipe'
                 width={200}
                 height={200}
-                className='  bg-cover w-[120]  rounded-t-xl'
+                className='bg-cover w-[120] rounded-t-xl'
               />
             </div>
           </div>
@@ -198,28 +207,12 @@ const SkeletonFour = ({ healthGoals, recipes }) => {
 
 const SkeletonFive = () => {
   const variants = {
-    initial: {
-      x: 0,
-    },
-    animate: {
-      x: 10,
-      rotate: 5,
-      transition: {
-        duration: 0.2,
-      },
-    },
+    initial: { x: 0 },
+    animate: { x: 10, rotate: 5, transition: { duration: 0.2 } },
   };
   const variantsSecond = {
-    initial: {
-      x: 0,
-    },
-    animate: {
-      x: -10,
-      rotate: -5,
-      transition: {
-        duration: 0.2,
-      },
-    },
+    initial: { x: 0 },
+    animate: { x: -10, rotate: -5, transition: { duration: 0.2 } },
   };
 
   return (
@@ -230,7 +223,7 @@ const SkeletonFive = () => {
     >
       <motion.div
         variants={variants}
-        className="flex flex-row rounded-2xl border border-neutral-100 dark:border-white/[0.2] p-2  items-start space-x-2 bg-white dark:bg-black"
+        className="flex flex-row rounded-2xl border border-neutral-100 dark:border-white/[0.2] p-2 items-start space-x-2 bg-white dark:bg-black"
       >
         <Image
           src="/img/nazeem.png"
@@ -240,8 +233,8 @@ const SkeletonFive = () => {
           className="rounded-full h-10 w-10"
         />
         <p className="text-xs text-neutral-500">
-          There are a lot of cool framerworks out there like React, Angular,
-          Vue, Svelte that can make your life ....
+          There are a lot of cool frameworks out there like React, Angular,
+          Vue, Svelte that can make your life easier...
         </p>
       </motion.div>
       <motion.div
@@ -255,14 +248,12 @@ const SkeletonFive = () => {
   );
 };
 
-
 const Profile = () => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [dummyData, setDummyData] = useState(null);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dummyData, setDummyData] = useState(defaultDummyData);
 
-  // fetch the dietplan data
   useEffect(() => {
     const fetchDietPlan = async () => {
       try {
@@ -270,8 +261,8 @@ const Profile = () => {
         const data = await response.json();
 
         if (data?.dietPlan?.daily_plan) {
-          const todayIndex = new Date().getDay(); // 0 (Sunday) to 6 (Saturday)
-          const todayData = data.dietPlan.daily_plan[todayIndex - 1]; // Adjust index (assuming Monday is Day 1)
+          const todayIndex = new Date().getDay();
+          const todayData = data.dietPlan.daily_plan[todayIndex - 1];
 
           if (todayData) {
             setDummyData({
@@ -279,17 +270,17 @@ const Profile = () => {
                 today: {
                   breakfast: {
                     name: todayData.breakfast[0]?.meal || "No meal",
-                    calories: todayData.breakfast[1]?.calories || 0, // Fix here
+                    calories: todayData.breakfast[1]?.calories || 0,
                     ingredients: todayData.breakfast[0]?.ingredients || [],
                   },
                   lunch: {
                     name: todayData.lunch[0]?.meal || "No meal",
-                    calories: todayData.lunch[1]?.calories || 0, // Fix here
+                    calories: todayData.lunch[1]?.calories || 0,
                     ingredients: todayData.lunch[0]?.ingredients || [],
                   },
                   dinner: {
                     name: todayData.dinner[0]?.meal || "No meal",
-                    calories: todayData.dinner[1]?.calories || 0, // Fix here
+                    calories: todayData.dinner[1]?.calories || 0,
                     ingredients: todayData.dinner[0]?.ingredients || [],
                   },
                 },
@@ -305,18 +296,18 @@ const Profile = () => {
                   carbs: 0,
                   fats: 0,
                 },
-                water: 5, // Assuming default value
+                water: 5,
               },
-              groceryList: data.dietPlan.all_ingredients.map((item) => ({
+              groceryList: data.dietPlan.all_ingredients?.map((item) => ({
                 name: item,
                 bought: false,
-              })),
+              })) || [],
             });
-
           }
         }
       } catch (error) {
         console.error("Error fetching diet plan:", error);
+        setDummyData(defaultDummyData);
       }
     };
 
@@ -326,40 +317,27 @@ const Profile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch('/api/user', {
-          credentials: 'include', // Include cookies for session-based auth
-        })
+        const response = await fetch('/api/user', { credentials: 'include' });
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`)
-        }
+        const data = await response.json();
+        if (!data.success || !data.user) throw new Error('Failed to fetch user data');
 
-        const data = await response.json()
-
-        if (!data.success || !data.user) {
-          throw new Error('Failed to fetch user data')
-        }
-
-        setUser(data.user)
+        setUser(data.user);
       } catch (err) {
-        console.error('Failed to fetch user data:', err)
-        setError(err.message)
+        console.error('Failed to fetch user data:', err);
+        setError(err.message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchUserData()
-  }, [])
+    fetchUserData();
+  }, []);
 
-  if (loading) return <div>Loading...</div>
-  if (error) return <div className="text-red-500 p-6">Error: {error}</div>
-  if (!user) return <div>No user data found</div>
-
-
-  //   if (loading) return <ProfileSkeleton />
-  if (error) return <div className="text-red-500 p-6">Error: {error}</div>
-
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div className="text-red-500 p-6">Error: {error}</div>;
+  if (!user) return <div>No user data found</div>;
 
   const items = [
     {
@@ -408,7 +386,6 @@ const Profile = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-10">
-      {/* Profile Header */}
       <div className="flex flex-col md:flex-row items-center gap-6 mb-8 bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-2xl shadow-sm">
         <div className="relative group w-32 h-32 rounded-full bg-gradient-to-br from-green-100 to-emerald-200 flex items-center justify-center">
           <span className="text-4xl">👤</span>
@@ -420,32 +397,39 @@ const Profile = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-1">{user.firstName + " " + user.lastName}</h1>
           <p className="text-gray-600 mb-2">{user.email}</p>
           <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-
             <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
-              {user.dietaryRestrictions}
+              {user.dietaryRestrictions || 'No dietary restrictions'}
             </span>
-
           </div>
         </div>
       </div>
 
-      <BentoGrid className="max-w-7xl mx-auto md:auto-rows-[20rem] ">
-        {items.map((item, i) => (
-          <BentoGridItem
-            key={i}
-            title={item.title}
-            description={item.description}
-            header={item.header}
-            className={cn("[&>p:text-lg]", item.className)}
-            icon={item.icon}
-          />
-        ))}
-      </BentoGrid>
-
+      {!dummyData.mealPlan.today.breakfast.name.includes('No meal') ? (
+        <BentoGrid className="max-w-7xl mx-auto md:auto-rows-[20rem]">
+          {items.map((item, i) => (
+            <BentoGridItem
+              key={i}
+              title={item.title}
+              description={item.description}
+              header={item.header}
+              className={cn("[&>p:text-lg]", item.className)}
+              icon={item.icon}
+            />
+          ))}
+        </BentoGrid>
+      ) : (
+        <div className="text-center p-8 bg-yellow-50 rounded-xl">
+          <h2 className="text-2xl font-semibold mb-4">No Diet Plan Found</h2>
+          <p className="text-gray-600 mb-4">You don't have an active diet plan. Would you like to create one?</p>
+          <Link href={'/dashboard/dietplan'}>
+            <button className="text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 bg-green-400">
+              Create New Diet Plan
+            </button>
+          </Link>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
-
-
-export default Profile
+export default Profile;
