@@ -1,5 +1,5 @@
 import React from 'react'
-
+import Profile from "../../../components/Dashboard/Profile/Profile"
 const page = () => {
   return (
     <section
@@ -14,7 +14,7 @@ const page = () => {
       }}
 
     >
-      Profile
+      <Profile />
 
     </section>
   )

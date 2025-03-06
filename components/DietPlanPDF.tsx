@@ -1,4 +1,4 @@
-import { Document, Page, View, Text, Image, StyleSheet, Font, LinearGradient } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet, Font } from '@react-pdf/renderer';
 import { DietPlanTypes } from '../types/index';
 // Register Fonts
 Font.register({
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     gap: 20, // Adds spacing between pairs
   },
   detailItem: {
-    flexDirection: 'row', 
+    flexDirection: 'row',
     flex: 1, // Ensures even width for each item
     alignItems: 'center',
   },
@@ -246,22 +246,22 @@ const DietPlanPDF = ({ userData, dietPlan, chartImage }: { userData: any; dietPl
       <View style={styles.guidelines}>
         <Text style={styles.sectionTitle}>KEY GUIDELINES</Text>
         <View style={{ flexDirection: 'column', gap: 15 }}>
-            {(dietPlan?.instructions ?? []).reduce((rows: [string, string | undefined][], text: string, index: number) => {
+          {(dietPlan?.instructions ?? []).reduce((rows: [string, string | undefined][], text: string, index: number) => {
             if (index % 2 === 0) {
               // Create a new row with two items (if possible)
               rows.push([text, dietPlan?.instructions?.[index + 1]]);
             }
             return rows;
-            }, []).map((row: [string, string | undefined], rowIndex: number) => (
+          }, []).map((row: [string, string | undefined], rowIndex: number) => (
             <View key={rowIndex} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 20 }}>
               {row.map((text: string | undefined, colIndex: number) => text && ( // Ensure text exists before rendering
-              <View key={colIndex} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <Text style={styles.guidelineIcon}>•&nbsp;</Text>
-                <Text style={styles.guidelineText}> {text}</Text>
-              </View>
+                <View key={colIndex} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <Text style={styles.guidelineIcon}>•&nbsp;</Text>
+                  <Text style={styles.guidelineText}> {text}</Text>
+                </View>
               ))}
             </View>
-            ))}
+          ))}
         </View>
       </View>
 
@@ -270,7 +270,7 @@ const DietPlanPDF = ({ userData, dietPlan, chartImage }: { userData: any; dietPl
       <View style={styles.ingredientList}>
         <Text style={styles.sectionTitle}>LIST OF INGRDIENTS INCLUDED IN YOUR PLAN</Text>
         <View style={styles.ingredientContainer}>
-          {dietPlan?.all_ingredients?.map((ingredient:String, index:number) => (
+          {dietPlan?.all_ingredients?.map((ingredient: String, index: number) => (
             <Text key={index} style={styles.badge}>
               {ingredient}
             </Text>
@@ -296,6 +296,7 @@ const DietPlanPDF = ({ userData, dietPlan, chartImage }: { userData: any; dietPl
       </View>
 
       {/* Meal Table */}
+      {/* Meal Table */}
       <View style={styles.table}>
         <View style={styles.tableHeader}>
           <Text style={styles.tableHeaderCell}>DAY</Text>
@@ -307,23 +308,40 @@ const DietPlanPDF = ({ userData, dietPlan, chartImage }: { userData: any; dietPl
         {dietPlan.daily_plan?.map((dayPlan, index: number) => (
           <View
             key={index}
-            style={[
-              styles.tableRow,
-              index % 2 === 0 ? evenRowStyle : {}
-            ]}
+            style={[styles.tableRow, index % 2 === 0 ? evenRowStyle : {}]}
           >
             <Text style={styles.tableCell}>Day {index + 1}</Text>
+
+            {/* Breakfast */}
             <Text style={styles.tableCell}>
-              {dayPlan.breakfast.map((meal: Meal) => `• ${meal.meal}\n(${meal.ingredients.slice(0, 3).join(', ')})`).join('\n')}
+              {(dayPlan.breakfast || [])
+                .filter(meal => meal?.meal) // Remove undefined/null meals
+                .map(meal => `• ${meal.meal}\n(${(meal.ingredients || []).join(', ')})`)
+                .join('\n') || ''} {/* Empty string instead of '-' */}
             </Text>
+
+            {/* Lunch */}
             <Text style={styles.tableCell}>
-              {dayPlan.lunch.map((meal: Meal) => `• ${meal.meal}\n(${meal.ingredients.slice(0, 3).join(', ')})`).join('\n')}
+              {(dayPlan.lunch || [])
+                .filter(meal => meal?.meal)
+                .map(meal => `• ${meal.meal}\n(${(meal.ingredients|| []).join(', ')})`)
+                .join('\n') || ''}
             </Text>
+
+            {/* Snacks */}
             <Text style={styles.tableCell}>
-              {dayPlan.snacks.map((meal: Meal) => `• ${meal.meal}\n(${meal.ingredients.slice(0, 2).join(', ')})`).join('\n')}
+              {(dayPlan.snacks || [])
+                .filter(meal => meal?.meal)
+                .map(meal => `• ${meal.meal}\n(${(meal.ingredients || []).join(', ')})`)
+                .join('\n') || ''}
             </Text>
+
+            {/* Dinner */}
             <Text style={styles.tableCell}>
-              {dayPlan.dinner.map((meal: Meal) => `• ${meal.meal}\n(${meal.ingredients.slice(0, 3).join(', ')})`).join('\n')}
+              {(dayPlan.dinner || [])
+                .filter(meal => meal?.meal)
+                .map(meal => `• ${meal.meal}\n(${(meal.ingredients || []).join(', ')})`)
+                .join('\n') || ''}
             </Text>
           </View>
         ))}
@@ -333,7 +351,7 @@ const DietPlanPDF = ({ userData, dietPlan, chartImage }: { userData: any; dietPl
       <View style={styles.ingredientList}>
         <Text style={styles.sectionTitle}>FOOD TO AVOID</Text>
         <View style={styles.ingredientContainer}>
-          {dietPlan?.foods_to_avoid?.map((food:String, index:number) => (
+          {dietPlan?.foods_to_avoid?.map((food: String, index: number) => (
             <Text key={index} style={styles.badge}>
               {food}
             </Text>
