@@ -51,12 +51,15 @@ const BmiGauge = ({ weight, height }) => {
     return (
         <div ref={containerRef} className="w-full h-full p-2 group">
             <div className="w-full bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-4 md:p-6 border border-emerald-100/50 backdrop-blur-sm transition-all duration-300">
+                {/* Header Section */}
                 <div className="mb-4 text-center">
                     <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent">
                         Health Metrics
                     </h2>
                     <p className="text-xs md:text-sm text-emerald-600 mt-1">Personalized BMI Analysis</p>
                 </div>
+
+                {/* Speedometer Section */}
                 <div className="relative w-full flex flex-col items-center justify-center mb-3 md:mb-4">
                     <div className="absolute inset-0 bg-white/30 rounded-2xl blur-md" />
                     <ReactD3Speedometer
@@ -81,15 +84,35 @@ const BmiGauge = ({ weight, height }) => {
                         <span className="text-xs md:text-sm font-semibold text-gray-600">BMI Index</span>
                     </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 max-sm:grid-cols-2 gap-2 w-full">
-                    <StatusIndicator color={status.color} label={status.label} icon={<IconChartDonut className="w-4 h-4" />} current={bmi.toFixed(1)} />
-                    <StatusIndicator color="#3b82f6" label="Weight" value={`${weight} kg`} icon={<IconWeight className="w-4 h-4" />} />
-                    <StatusIndicator color="#16a34a" label="Height" value={`${height} cm`} icon={<IconRuler className="w-4 h-4" />} />
-                    <StatusIndicator color="#eab308" label="Status" value={status.label} icon={<IconAlertCircle className="w-4 h-4" />} />
+
+                {/* Status Indicators Grid - Modified Section */}
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-y-2 gap-x-1 w-full">
+                    {[
+                        { color: status.color, label: status.label, icon: <IconChartDonut className="w-4 h-4" />, current: bmi.toFixed(1) },
+                        { color: "#3b82f6", label: "Weight", value: `${weight} kg`, icon: <IconWeight className="w-4 h-4" /> },
+                        { color: "#16a34a", label: "Height", value: `${height} cm`, icon: <IconRuler className="w-4 h-4" /> },
+                        { color: "#eab308", label: "Status", value: status.label, icon: <IconAlertCircle className="w-4 h-4" /> }
+                    ].map((item, index) => (
+                        <div
+                            key={index}
+                            className="w-full flex items-center justify-center p-1 md:p-2"
+                        >
+                            <StatusIndicator
+                                color={item.color}
+                                label={item.label}
+                                value={item.value || item.current}
+                                icon={item.icon}
+                                className="w-full min-w-[120px] max-w-[160px] flex items-center justify-center text-center"
+                            />
+                        </div>
+                    ))}
                 </div>
+
                 <div className="absolute inset-0 rounded-3xl border-2 border-white/20 pointer-events-none" />
             </div>
         </div>
+
+
     )
 }
 

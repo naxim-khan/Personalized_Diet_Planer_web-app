@@ -325,65 +325,71 @@ const Profile = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4  py-8">
-      <div className="max-w-7xl mx-auto  py-4 ">
+      <div className="max-w-7xl mx-auto  py-8 ">
         {/* Profile Header Section */}
-        <div className="flex flex-col md:flex-row  items-center gap-4 md:gap-6 mb-8 bg-gradient-to-r from-green-50 to-emerald-50 p-4 md:p-6 rounded-2xl shadow-sm">
-          <div className='w-full md:w-1/3 flex items-center justify-center gap-4'>
-            <div className='flex items-center justify-center gap-4'>
-              <div className="relative group w-20 h-20 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-green-100 to-emerald-200 flex items-center justify-center shrink-0">
+        <div className="flex flex-col sm:flex-row items-start gap-6 mb-8 bg-gradient-to-r from-green-50 to-emerald-50 p-4 md:p-6 rounded-2xl shadow-sm">
+          {/* Image + Profile Info Container */}
+          <div className="flex flex-1 md:w-1/3 items-center gap-4 w-full">
+            {/* Image Section */}
+            <div className="relative group w-24 h-24 md:w-32 md:h-32 min-w-24 md:min-w-32">
+              <div className="aspect-square w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-green-100 to-emerald-200 border-4 border-white shadow-md">
                 {user.profile_img ? (
-                  <div className="relative w-32 h-32">
-                    <Image
-                      src={user.profile_img}
-                      alt="Profile"
-                      width={128}
-                      height={128}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  </div>
+                  <Image
+                    src={user.profile_img}
+                    alt="Profile"
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
+                    priority
+                  />
                 ) : (
-                  <div className="relative group w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-2xl md:text-4xl">👤</span>
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="profileUpload"
-                      ref={fileInputRef}
-                    />
-
-                    <label
-                      htmlFor="profileUpload"
-                      className="absolute inset-0 bg-black/60 text-white text-xs md:text-sm rounded-full flex items-center justify-center cursor-pointer transition-opacity duration-300 opacity-0 group-hover:opacity-100 bg-gradient-green"
-                    >
-                      Upload
-                    </label>
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-4xl">👤</span>
                   </div>
                 )}
-
               </div>
-              <div className="text-left flex-1 min-w-0">
-                <h1 className="text-xl md:text-3xl font-bold text-gray-800 mb-1 truncate">{user.firstName + " " + user.lastName}</h1>
-                <p className="text-sm md:text-base text-gray-600 mb-2 truncate">{user.email}</p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="bg-emerald-100 text-emerald-800 px-2 py-1 md:px-3 md:py-1 rounded-full text-xs md:text-sm font-medium">
-                    {user.dietaryRestrictions || 'No dietary restrictions'}
-                  </span>
-                </div>
+
+              {/* Upload Button */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="profileUpload"
+                ref={fileInputRef}
+              />
+              <label
+                htmlFor="profileUpload"
+                className="absolute inset-0 flex items-center justify-center bg-black/60 text-white text-xs md:text-sm rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              >
+                Upload
+              </label>
+            </div>
+
+            {/* Profile Info */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-1 truncate">
+                {user.firstName + " " + user.lastName}
+              </h1>
+              <p className="text-gray-600 mb-2 text-xs sm:text-sm md:text-base truncate">
+                {user.email}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs md:text-sm font-medium">
+                  {user.dietaryRestrictions || 'No dietary restrictions'}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Details Grid Section */}
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-8">
+          <div className="w-full md:w-2/3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             <DetailCard title="Weight" value={`${user.weight} kg`} icon="⚖️" />
             <DetailCard title="Height" value={`${user.height} cm`} icon="📏" />
             <DetailCard title="Activity Level" value={user.activityLevel} icon="🏃" />
             <DetailCard title="Fitness Goal" value={user.fitnessGoal} icon="🎯" />
             <DetailCard title="Preferred Cuisine" value={user.preferredCuisine} icon="🍲" />
-            <DetailCard title="Cooking Style" value={user.cookingStyle} icon="👨🍳" />
+            <DetailCard title="Cooking Style" value={user.cookingStyle} icon="🍳" />
           </div>
         </div>
 
