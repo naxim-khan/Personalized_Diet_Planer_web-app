@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
       allowedOrigins: [
         "localhost:3000", // Local development
         "vssknvcj-3000.inc1.devtunnels.ms", // Dev tunnels
-        // Add other allowed domains here
       ],
       allowedForwardedHosts: [
         "localhost:3000",
@@ -67,7 +66,7 @@ const nextConfig: NextConfig = {
   },
   // Configure images if needed
   images: {
-    domains: ["localhost", "vssknvcj-3000.inc1.devtunnels.ms"],
+    domains: ["localhost", "vssknvcj-3000.inc1.devtunnels.ms", "res.cloudinary.com"],
   },
   // Add this to handle dynamic routes properly
   output: "standalone", // Recommended for production

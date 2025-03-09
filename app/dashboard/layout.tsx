@@ -16,13 +16,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 <>
                     <SideBar user={loggedIn} />
                     <div className="flex size-full flex-col">
-                        <div className="root-layout">
+                        <div className="root-layout fixed w-full bg-gray-100 z-50 ">
                             <Image src={'/img/LOGO.png'} alt="logo-icon" width={30} height={30} />
-                            <div>
-                                <MobileNav user={loggedIn} />
+                            <div className="w-full flex items-end justify-end">
+                                <div>
+                                    <MobileNav user={loggedIn} />
+                                </div>
                             </div>
                         </div>
-                        {children}
+                        <div className="mt-10 sm:mt-0">
+                            {children}
+                        </div>
                     </div>
                 </>
             }

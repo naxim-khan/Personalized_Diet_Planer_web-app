@@ -9,6 +9,7 @@ import { cookies } from "next/headers";
 import { parseStringify } from "../utils";
 import { SignUpParams } from "../../types";
 import { signInProps } from "../../types";
+import {  Permission, Role } from 'node-appwrite';
 
 export const signIn = async ({ email, password }: signInProps) => {
     try {
@@ -101,7 +102,7 @@ export const signUp = async (userData: SignUpParams) => {
     } catch (error) {
         console.error("Error:", error);
         const errorMessage = error instanceof Error ? error.message : "Sign-up failed";
-        return parseStringify({ 
+        return parseStringify({
             success: false,
             error: errorMessage
         });
@@ -129,3 +130,30 @@ export const logoutAccount = async () => {
         return null;
     }
 }
+
+// Updated updateUserProfile action
+export const updateUserProfile = async (userId: string, imageUrl: string) => {
+    try {
+        const { databases } = await createAdminClient(); // Ensure the client is correctly initialized
+
+        if (!userId || !imageUrl) {
+            throw new Error("Missing userId or imageUrl");
+        }
+
+        // 🛠 Fix: Pass the document data as an object
+        const userProfile = await databases.updateDocument(
+            process.env.APPWRITE_DATABASE_ID!,
+            process.env.APPWRITE_USER_COLLECTION_ID!,
+            userId,
+            { profile_img: imageUrl } // ✅ Ensure this is properly formatted
+        );
+
+        return { success: true, user: userProfile };
+    } catch (error) {
+        console.error("Error updating profile image:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Update failed"
+        };
+    }
+};

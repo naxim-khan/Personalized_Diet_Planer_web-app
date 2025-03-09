@@ -1,18 +1,19 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { cn } from "../../lib/utils";
 import { BentoGrid, BentoGridItem } from "../../ui/bento-grid";
-import {
-  IconBoxAlignRightFilled,
-  IconClipboardCopy,
-  IconFileBroken,
-  IconSignature,
-  IconTableColumn,
-} from "@tabler/icons-react";
+import { IconCheck, IconLeaf, IconShoppingBag, IconChartDonut, IconMeat, IconGlassFull, IconChefHat } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { AnimatedList } from "../../../components/magicui/animated-list";
+import { AnimatedCircularProgressBar } from '../../../components/magicui/animated-circular-progress-bar';
+
 import Link from 'next/link';
+import DetailCard from './DetailCard';
+import BmiGauge from './BmiGauge';
+
+import { updateUserProfile } from '../../../lib/actions/users.action';
+
 // Default data structure to prevent null errors
 const defaultDummyData = {
   mealPlan: {
@@ -31,220 +32,134 @@ const defaultDummyData = {
   groceryList: []
 };
 
-const SkeletonOne = ({ mealPlan }) => {
-  const variants = {
-    initial: { x: 0 },
-    animate: { x: 10, rotate: 5, transition: { duration: 0.2 } },
-  };
-
-  const mealEntries = Object.entries(mealPlan.today);
-  const largeInstructionSet = Array.from({ length: 100 }, () => mealEntries).flat();
+// Cards
+const MealPlanCard = ({ mealPlan }) => {
+  const meals = Object.entries(mealPlan.today);
 
   return (
-    <motion.div
-      initial="initial"
-      className="relative flex flex-1 w-full max-h-[10rem] sm:max-h-[15rem] min-h-[6rem] flex-col space-y-2 overflow-hidden"
-    >
-      <AnimatedList delay={4000} className="gap-3">
-        {largeInstructionSet.map(([mealType, details], index) => (
-          <motion.li
-            key={`${mealType}-${index}`}
-            variants={variants}
-            className="relative mx-auto min-h-fit w-[calc(100%-10px)] cursor-pointer transition-all duration-200 ease-in-out hover:scale-[103%]"
+    <div className="relative   bg-white rounded-3xl p-6 shadow-lg border border-emerald-50">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-emerald-100 rounded-xl">
+          <IconChefHat className="w-6 h-6 text-emerald-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800">Today's Meals</h2>
+      </div>
+
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {meals.map(([mealType, details]) => (
+          <motion.div
+            key={mealType}
+            whileHover={{ scale: 1.02 }}
+            className="flex-shrink-0 w-64 bg-gradient-to-br from-emerald-50 to-white rounded-2xl p-5 border border-emerald-100"
           >
-            <div className="flex flex-col rounded-lg border border-neutral-100 dark:border-white/[0.2] bg-white dark:bg-black">
-              <span className="uppercase text-xs font-bold dark:text-gray-300 mb-1 h-full w-full py-2 flex items-center justify-center rounded-t-lg bg-gradient-to-l from-green-500 to-green-200 text-white">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+              <span className="text-sm font-semibold text-emerald-600 uppercase">
                 {mealType}
               </span>
-              <div className='py-2 px-2'>
-                <div className="flex justify-between items-center">
-                  <span className="capitalize font-semibold text-md">{details.name}</span>
-                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
-                    {details.calories || "N/A"} kcal
-                  </span>
-                </div>
-                <ul className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-1">
-                  {details.ingredients?.map((ingredient, i) => (
-                    <li key={i} className="before:content-['•'] before:mr-1 px-2 rounded-lg bg-green-600 text-white flex items-center justify-center">
-                      {ingredient}
-                    </li>
-                  ))}
-                </ul>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">{details.name}</h3>
+            <p className="text-sm text-emerald-600 mb-3">
+              🍴 {details.ingredients?.slice(0, 3).join(', ')}
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm">
+                {details.calories} kcal
+              </span>
+              <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                <IconLeaf className="w-4 h-4 text-white" />
               </div>
             </div>
-          </motion.li>
+          </motion.div>
         ))}
-      </AnimatedList>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white rounded-b-lg"></div>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 
-const SkeletonTwo = ({ nutrition }) => {
-  const variants = {
-    initial: { width: 0 },
-    animate: { width: "100%", transition: { duration: 0.2 } },
-    hover: { width: ["0%", "100%"], transition: { duration: 2 } },
-  };
+const NutritionCard = ({ nutrition }) => {
+  const progress = (nutrition.consumed / nutrition.targetCalories) * 100;
 
   return (
-    <motion.div
-      initial="initial"
-      animate="animate"
-      whileHover="hover"
-      className="flex flex-1 w-full h-full min-h-[6rem] dark:bg-dot-white/[0.2] bg-dot-black/[0.2] flex-col space-y-2 p-4"
-    >
-      <div className="space-y-4">
-        <motion.div
-          variants={variants}
-          className="h-3 bg-gray-100 rounded-full overflow-hidden"
-        >
-          <div
-            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600"
-            style={{ width: `${(nutrition.consumed / nutrition.targetCalories * 100)}%` }}
-          />
-        </motion.div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {Object.entries(nutrition.macros).map(([macro, value]) => (
+    <div className="bg-white rounded-3xl p-6 shadow-lg border border-emerald-50">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-emerald-100 rounded-xl">
+          <IconChartDonut className="w-6 h-6 text-emerald-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800">Nutrition Tracking</h2>
+      </div>
+
+      <div className="space-y-6">
+        <div>
+          <div className="flex justify-between mb-2">
+            <span className="text-emerald-600">Daily Progress</span>
+            <span className="font-semibold">{Math.round(progress)}%</span>
+          </div>
+          <div className="h-3 bg-emerald-50 rounded-full overflow-hidden">
             <motion.div
-              key={macro}
-              whileHover={{ scale: 1.05 }}
-              className="text-center p-1 bg-emerald-50 rounded-xl flex items-center justify-center gap-2"
-            >
-              <div className="text-lg font-bold text-emerald-700">{value}</div>
-              <div className="text-xs text-gray-600 capitalize">{macro}</div>
-            </motion.div>
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          {Object.entries(nutrition.macros).map(([macro, value]) => (
+            <div key={macro} className="text-center p-3 bg-emerald-50 rounded-xl">
+              <div className="text-2xl font-bold text-emerald-600">{value}g</div>
+              <div className="text-sm text-gray-600 capitalize">{macro}</div>
+            </div>
           ))}
         </div>
-      </div>
-    </motion.div>
-  );
-};
 
-const SkeletonThree = ({ groceryList }) => {
-  const variants = {
-    initial: { opacity: 0 },
-    animate: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-
-  const itemVariants = {
-    initial: { x: -20 },
-    animate: { x: 0 }
-  };
-
-  return (
-    <motion.div
-      variants={variants}
-      initial="initial"
-      animate="animate"
-      className="flex flex-1 w-full h-full min-h-[6rem] dark:bg-dot-white/[0.2] bg-dot-black/[0.2] flex-col space-y-2 p-4 overflow-x-hidden"
-    >
-      {groceryList.map((item, i) => (
-        <motion.div
-          key={i}
-          variants={itemVariants}
-          className="flex items-center gap-3 p-2 hover:bg-emerald-50 rounded-lg transition-colors"
-        >
-          <input
-            type="checkbox"
-            defaultChecked={item.bought}
-            className="form-checkbox h-4 w-4 text-emerald-600"
-          />
-          <span className={`text-sm ${item.bought ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-            {item.name}
-          </span>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-};
-
-const SkeletonFour = ({ healthGoals, recipes }) => {
-  const first = {
-    initial: { x: 20, rotate: -5 },
-    hover: { x: 0, rotate: 0 },
-  };
-  const second = {
-    initial: { x: -20, rotate: 5 },
-    hover: { x: 0, rotate: 0 },
-  };
-
-  return (
-    <motion.div
-      initial="initial"
-      animate="animate"
-      whileHover="hover"
-      className="flex flex-1 w-full h-full min-h-[6rem] dark:bg-dot-white/[0.2] bg-dot-black/[0.2] flex-row space-x-2"
-    >
-      {recipes.map((recipe, i) => (
-        <motion.div
-          key={i}
-          variants={i === 0 ? first : i === 2 ? second : {}}
-          className={`h-full w-1/3 rounded-2xl bg-white p-2 dark:bg-black flex flex-col items-center justify-center border `}
-        >
-          <div className="relative w-full h-32 rounded-lg overflow-hidden ">
-            <div className="absolute inset-0 bg-gradient-to-b from-green-800 to-green-400 flex items-end justify-center ">
-              <Image
-                src={'/img/nazeem.png'}
-                alt='recipe'
-                width={200}
-                height={200}
-                className='bg-cover w-[120] rounded-t-xl'
-              />
+        <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
+          <IconGlassFull className="w-6 h-6 text-emerald-600" />
+          <div className="flex-1">
+            <div className="flex justify-between mb-1">
+              <span className="text-sm text-emerald-600">Water Intake</span>
+              <span className="text-sm font-semibold">{nutrition.water}/8 glasses</span>
+            </div>
+            <div className="flex gap-1">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-1/12 h-2 rounded-full ${i < nutrition.water ? 'bg-emerald-500' : 'bg-emerald-100'}`}
+                />
+              ))}
             </div>
           </div>
-          <p className="text-sm text-center font-medium mt-2">{recipe.name}</p>
-          <div className="flex gap-1 mt-2">
-            <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">
-              {recipe.time}
-            </span>
-          </div>
-        </motion.div>
-      ))}
-    </motion.div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-const SkeletonFive = () => {
-  const variants = {
-    initial: { x: 0 },
-    animate: { x: 10, rotate: 5, transition: { duration: 0.2 } },
-  };
-  const variantsSecond = {
-    initial: { x: 0 },
-    animate: { x: -10, rotate: -5, transition: { duration: 0.2 } },
-  };
-
+const GroceryCard = ({ groceryList }) => {
   return (
-    <motion.div
-      initial="initial"
-      whileHover="animate"
-      className="flex flex-1 w-full h-full min-h-[6rem] dark:bg-dot-white/[0.2] bg-dot-black/[0.2] flex-col space-y-2"
-    >
-      <motion.div
-        variants={variants}
-        className="flex flex-row rounded-2xl border border-neutral-100 dark:border-white/[0.2] p-2 items-start space-x-2 bg-white dark:bg-black"
-      >
-        <Image
-          src="/img/nazeem.png"
-          alt="avatar"
-          height="100"
-          width="100"
-          className="rounded-full h-10 w-10"
-        />
-        <p className="text-xs text-neutral-500">
-          There are a lot of cool frameworks out there like React, Angular,
-          Vue, Svelte that can make your life easier...
-        </p>
-      </motion.div>
-      <motion.div
-        variants={variantsSecond}
-        className="flex flex-row rounded-full border border-neutral-100 dark:border-white/[0.2] p-2 items-center justify-end space-x-2 w-3/4 ml-auto bg-white dark:bg-black"
-      >
-        <p className="text-xs text-neutral-500">Use PHP.</p>
-        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 flex-shrink-0" />
-      </motion.div>
-    </motion.div>
+    <div className="bg-white rounded-3xl p-6 shadow-lg border border-emerald-50">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-3 bg-emerald-100 rounded-xl">
+          <IconShoppingBag className="w-6 h-6 text-emerald-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800">Grocery List</h2>
+      </div>
+
+      <div className="space-y-3 custom-scrollbar px-2 max-h-[15rem] overflow-hidden overflow-y-scroll">
+        {groceryList.map((item, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ x: 5 }}
+            className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg"
+          >
+            <IconCheck className={`w-5 h-5 ${item.bought ? 'text-emerald-600' : 'text-emerald-200'}`} />
+            <span className={`${item.bought ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+              {item.name}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
   );
 };
 
@@ -254,6 +169,66 @@ const Profile = () => {
   const [error, setError] = useState(null);
   const [dummyData, setDummyData] = useState(defaultDummyData);
 
+  // profile image upload
+  const fileInputRef = useRef(null);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'profile_images'); // Make sure this matches your Cloudinary preset name
+
+      const cloudinaryRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: formData }
+      );
+
+      if (!cloudinaryRes.ok) {
+        throw new Error('Cloudinary upload failed');
+      }
+
+      const cloudinaryData = await cloudinaryRes.json();
+      console.log("Cloudinary Response:", cloudinaryData); // Debugging
+
+      // Update Appwrite with the new image URL
+      const updateResult = await updateUserProfile(user.$id, cloudinaryData.secure_url);
+
+      if (!updateResult.success) {
+        throw new Error(updateResult.error);
+      }
+
+      setUser(prev => ({
+        ...prev,
+        profile_img: cloudinaryData.secure_url
+      }));
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // progress bar
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    const handleIncrement = (prev) => {
+      if (prev === 100) {
+        return 0;
+      }
+      return prev + 10;
+    };
+    setValue(handleIncrement);
+    const interval = setInterval(() => setValue(handleIncrement), 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const fetchDietPlan = async () => {
       try {
@@ -261,8 +236,9 @@ const Profile = () => {
         const data = await response.json();
 
         if (data?.dietPlan?.daily_plan) {
-          const todayIndex = new Date().getDay();
-          const todayData = data.dietPlan.daily_plan[todayIndex - 1];
+          const todayIndex = (new Date().getDay() + 6) % 7;
+          const todayData = data.dietPlan.daily_plan[todayIndex];
+          console.log(todayData)
 
           if (todayData) {
             setDummyData({
@@ -335,88 +311,121 @@ const Profile = () => {
     fetchUserData();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>
+    <AnimatedCircularProgressBar
+      max={100}
+      min={0}
+      value={value}
+      gaugePrimaryColor="rgb(79 70 229)"
+      gaugeSecondaryColor="rgba(0, 0, 0, 0.1)"
+    />
+  </div>;
   if (error) return <div className="text-red-500 p-6">Error: {error}</div>;
   if (!user) return <div>No user data found</div>;
 
-  const items = [
-    {
-      title: "Today's Meal Plan",
-      description: "Your daily nutrition schedule",
-      header: <SkeletonOne mealPlan={dummyData.mealPlan} />,
-      className: "md:col-span-1",
-      icon: <IconClipboardCopy className="h-4 w-4 text-neutral-500" />,
-    },
-    {
-      title: "Nutrition Tracking",
-      description: "Your daily nutrition intake",
-      header: <SkeletonTwo nutrition={dummyData.nutrition} />,
-      className: "md:col-span-1",
-      icon: <IconFileBroken className="h-4 w-4 text-neutral-500" />,
-    },
-    {
-      title: "Grocery List",
-      description: "Your shopping list for the week",
-      header: <SkeletonThree groceryList={dummyData.groceryList} />,
-      className: "md:col-span-1",
-      icon: <IconSignature className="h-4 w-4 text-neutral-500" />,
-    },
-    {
-      title: "Recommended Recipes",
-      description: "Personalized recipe suggestions",
-      header: <SkeletonFour
-        healthGoals={user?.fitnessGoal}
-        recipes={[
-          { name: "Protein Salad", time: "20 mins" },
-          { name: "Quinoa Bowl", time: "30 mins" },
-          { name: "Grilled Chicken", time: "25 mins" }
-        ]}
-      />,
-      className: "md:col-span-2",
-      icon: <IconTableColumn className="h-4 w-4 text-neutral-500" />,
-    },
-    {
-      title: "Text Summarization",
-      description: "Summarize your lengthy documents",
-      header: <SkeletonFive />,
-      className: "md:col-span-1",
-      icon: <IconBoxAlignRightFilled className="h-4 w-4 text-neutral-500" />,
-    },
-  ];
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-10">
-      <div className="flex flex-col md:flex-row items-center gap-6 mb-8 bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-2xl shadow-sm">
-        <div className="relative group w-32 h-32 rounded-full bg-gradient-to-br from-green-100 to-emerald-200 flex items-center justify-center">
-          <span className="text-4xl">👤</span>
-          <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <span className="text-white text-sm">Upload</span>
+    <div className="max-w-7xl mx-auto px-4  py-8">
+      <div className="max-w-7xl mx-auto  py-4 ">
+        {/* Profile Header Section */}
+        <div className="flex flex-col md:flex-row  items-center gap-4 md:gap-6 mb-8 bg-gradient-to-r from-green-50 to-emerald-50 p-4 md:p-6 rounded-2xl shadow-sm">
+          <div className='w-full md:w-1/3 flex items-center justify-center gap-4'>
+            <div className='flex items-center justify-center gap-4'>
+              <div className="relative group w-20 h-20 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-green-100 to-emerald-200 flex items-center justify-center shrink-0">
+                {user.profile_img ? (
+                  <div className="relative w-32 h-32">
+                    <Image
+                      src={user.profile_img}
+                      alt="Profile"
+                      width={128}
+                      height={128}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative group w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-2xl md:text-4xl">👤</span>
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="profileUpload"
+                      ref={fileInputRef}
+                    />
+
+                    <label
+                      htmlFor="profileUpload"
+                      className="absolute inset-0 bg-black/60 text-white text-xs md:text-sm rounded-full flex items-center justify-center cursor-pointer transition-opacity duration-300 opacity-0 group-hover:opacity-100 bg-gradient-green"
+                    >
+                      Upload
+                    </label>
+                  </div>
+                )}
+
+              </div>
+              <div className="text-left flex-1 min-w-0">
+                <h1 className="text-xl md:text-3xl font-bold text-gray-800 mb-1 truncate">{user.firstName + " " + user.lastName}</h1>
+                <p className="text-sm md:text-base text-gray-600 mb-2 truncate">{user.email}</p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-emerald-100 text-emerald-800 px-2 py-1 md:px-3 md:py-1 rounded-full text-xs md:text-sm font-medium">
+                    {user.dietaryRestrictions || 'No dietary restrictions'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Details Grid Section */}
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-8">
+            <DetailCard title="Weight" value={`${user.weight} kg`} icon="⚖️" />
+            <DetailCard title="Height" value={`${user.height} cm`} icon="📏" />
+            <DetailCard title="Activity Level" value={user.activityLevel} icon="🏃" />
+            <DetailCard title="Fitness Goal" value={user.fitnessGoal} icon="🎯" />
+            <DetailCard title="Preferred Cuisine" value={user.preferredCuisine} icon="🍲" />
+            <DetailCard title="Cooking Style" value={user.cookingStyle} icon="👨🍳" />
           </div>
         </div>
-        <div className="text-center md:text-left">
-          <h1 className="text-3xl font-bold text-gray-800 mb-1">{user.firstName + " " + user.lastName}</h1>
-          <p className="text-gray-600 mb-2">{user.email}</p>
-          <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-            <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
-              {user.dietaryRestrictions || 'No dietary restrictions'}
-            </span>
-          </div>
+
+        {/* BMI Gauge Section */}
+        <div className="mb-8 flex items-center justify-center w-full">
+          <BmiGauge weight={user.weight} height={user.height} />
         </div>
       </div>
 
       {!dummyData.mealPlan.today.breakfast.name.includes('No meal') ? (
-        <BentoGrid className="max-w-7xl mx-auto md:auto-rows-[20rem]">
-          {items.map((item, i) => (
-            <BentoGridItem
-              key={i}
-              title={item.title}
-              description={item.description}
-              header={item.header}
-              className={cn("[&>p:text-lg]", item.className)}
-              icon={item.icon}
-            />
-          ))}
-        </BentoGrid>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* First Row - Three Main Cards */}
+          <div className="md:col-span-2 lg:col-span-1">
+            <MealPlanCard mealPlan={dummyData.mealPlan} />
+          </div>
+          <div className="md:col-span-2 lg:col-span-1">
+            <NutritionCard nutrition={dummyData.nutrition} />
+          </div>
+          <div className="md:col-span-2 lg:col-span-1">
+            <GroceryCard groceryList={dummyData.groceryList} />
+          </div>
+
+          {/* Second Row - Weekly Progress */}
+          <div className="md:col-span-2 lg:col-span-3">
+            <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-3xl p-6 text-white h-full">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <IconMeat className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold">Weekly Progress</h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                {[...Array(7)].map((_, i) => (
+                  <div key={i} className="text-center">
+                    <div className="h-20 sm:h-24 bg-white/10 rounded-xl mb-2"></div>
+                    <span className="text-xs sm:text-sm">Day {i + 1}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="text-center p-8 bg-yellow-50 rounded-xl">
           <h2 className="text-2xl font-semibold mb-4">No Diet Plan Found</h2>
